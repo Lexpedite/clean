@@ -41,3 +41,23 @@ A CLEAN-formatted piece of legislation has the following features:
 * Subparagraphs are indented thrice, and begin with a lowercase roman numeral in parentheses
 * Text is kept on one line.
 
+An example act might look like this:
+```text
+Rock Paper Scissors Act
+
+Players
+1. A game of rock paper scissors has two players.
+2. There are three signs:
+  (1) Rock,
+  (2) Paper, and
+  (3) Scissors.
+
+Defeating Relationships
+3. The signs have the following relationships:
+  (1) Rock beats Scissors,
+  (2) Scissors beats Paper, and
+  (3) Paper beats Rock.
+
+Winner
+4. The winner of a game is the player who throws a sign that beats the sign of the other player.
+```
