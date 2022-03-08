@@ -1,3 +1,2 @@
 __pycache__/*.pyc
 tests/__pycache__/*.pyc
-tests/__pycache__/test_parser.cpython-38-pytest-5.4.3.pyc
