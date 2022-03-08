@@ -37,13 +37,12 @@ def test_parse_insert_index(good_insert_index):
 # show_parse("1.")
 # show_parse("1.2.")
 
-# # # It is not possible to distinguish paragraph (i) from
-# # # sub-paragraph (i) in the abstract, so it will need
-# # # to depend on a larger structure.
+### It is not possible to distinguish paragraph (i) from
+### sub-paragraph (i) in the abstract, so it will need
+### to depend on a larger structure.
 
-# # # We also aren't distinguishing between well-formed and
-# # # poorly-formed lower-case roman numbers.
-
+### We also aren't distinguishing between well-formed and
+### poorly-formed lower-case roman numbers.
 # test_target = sub_paragraph_index
 
 # show_parse("(iiiv.1.2234)")
