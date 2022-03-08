@@ -3,6 +3,12 @@
 # legal documents, and functions to generate Akoma Ntoso versions
 # of the documents expressed in that language.
 
+# TODO: Headers are showing up as part of the previous text.
+# TODO: Deal with multi-line text.
+# TODO: Deal with sandwich sections.
+# TODO: Make it possible to have empty sections.
+# TODO: Get the AN Generator to use insert indexes.
+
 from pyparsing import *
 import string
 
@@ -33,9 +39,6 @@ rn_ones_ix = Literal('i') + Literal('x')
 rn_ones = rn_ones_i ^ rn_ones_iv ^ rn_ones_v ^ rn_ones_ix
 rn = rn_thousands + rn_hundreds + rn_tens + rn_ones
 
-# TODO: I don't know if the rn parse element will accept a blank string,
-# and it hasn't been tested.
-
 lowercase_roman_number = Word(lowercase_roman_numerals)
 
 # Parser elements for CLEAN
@@ -55,11 +58,11 @@ heading = EOL + lineStart + Combine(Word(string.ascii_uppercase, printables) + Z
 title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + EOL
 sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('sub-paragraph text') + EOL
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
-paragraph <<= paragraph_index + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('paragraph text') + EOL + Optional(IndentedBlock(sub_paragraph_list))('sub-paragraphs')
+paragraph <<= paragraph_index + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('paragraph text') + EOL + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')
 paragraph_list = OneOrMore(Group(paragraph))
-sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('sub-section text') + EOL + Optional(IndentedBlock(paragraph_list))('paragraphs')
+sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('sub-section text') + EOL + Optional(IndentedBlock(paragraph_list,grouped=False))('paragraphs')
 sub_section_list = OneOrMore(Group(sub_section))
-section <<= Optional(heading)('section header') + section_index('section index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('section text') + EOL + Optional(IndentedBlock(sub_section_list)('sub-sections'))
+section <<= Optional(heading)('section header') + section_index('section index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('section text') + EOL + Optional(IndentedBlock(sub_section_list,grouped=False)('sub-sections'))
 act = title('title') + ZeroOrMore(Group(section))('body')
 
 

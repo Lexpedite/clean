@@ -1,6 +1,35 @@
 import pytest
 from ..clean import *
 
+# Insert Indexes are used to add sections to a text between amendments,
+# so as to avoid the need to renumber items and break cross-references.
+
+@pytest.mark.parametrize("good_insert_index",[
+    ".1",
+    ".1.2"
+])
+def test_parse_insert_index(good_insert_index):
+    assert insert_index.parseString(good_insert_index,parse_all=True)
+
+@pytest.mark.parametrize("good_subparagraph_index",[
+    "(viii)",
+    "(c)",
+    "(i.123.4)",
+    "(iv.5)"
+])
+def test_parse_subpara_index(good_subparagraph_index):
+    assert sub_paragraph_index.parseString(good_subparagraph_index,parse_all=True)
+
+@pytest.mark.parametrize("bad_subparagraph_index",[
+    "(b)", #Must be roman numerals
+    "(M)", # must be lower-case
+    "(iivivi)", # TODO: must be well-formed roman numeral
+])
+def test_parse_bad_subpara_index(bad_subparagraph_index):
+    with pytest.raises(ParseException):
+        assert sub_paragraph_index.parseString(bad_subparagraph_index,parse_all=True)
+
+
 @pytest.mark.parametrize("good_paragraph_index",[
     "(aa)",
     "(ab.1)",
@@ -19,173 +48,187 @@ def test_parse_paragraph_index(good_paragraph_index):
 ])
 @pytest.mark.xfail
 def test_parse_bad_paragraph_index(bad_paragraph_index):
-    with pytest.raises(AttributeError):
+    with pytest.raises(ParseException):
         assert paragraph_index.parseString(bad_paragraph_index,parse_all=True)
 
 def test_parse_paragraph_index_structure():
     assert paragraph_index.parseString("(a)",parse_all=True)['paragraph number'] == "a"
 
-@pytest.mark.parametrize("good_insert_index",[
-    ".1",
-    ".1.2"
+@pytest.mark.parametrize("good_sub_section_index",[
+    "(12)",
+    "(4.1)",
+    "(234.1.2345)"
 ])
-def test_parse_insert_index(good_insert_index):
-    assert insert_index.parseString(good_insert_index,parse_all=True)
+def test_parse_sub_section_index(good_sub_section_index):
+    assert sub_section_index.parseString(good_sub_section_index,parse_all=True)
 
+@pytest.mark.parametrize("bad_sub_section_index",[
+    "(12a)",
+    "(4.1",
+    "234.1.2345)",
+    "(x)"
+])
+@pytest.mark.xfail
+def test_parse_bad_sub_section_index(bad_sub_section_index):
+    with pytest.raises(ParseException):
+        assert sub_section_index.parseString(bad_sub_section_index,parse_all=True)
 
-# test_target = section_index
-# show_parse("1.")
-# show_parse("1.2.")
+@pytest.mark.parametrize("good_section_index",[
+    "1.",
+    "12345.",
+    "1.2."
+])
+def test_parse_section_index(good_section_index):
+    assert section_index.parseString(good_section_index,parse_all=True)
 
-### It is not possible to distinguish paragraph (i) from
-### sub-paragraph (i) in the abstract, so it will need
-### to depend on a larger structure.
+@pytest.mark.parametrize("bad_section_index",[
+    "A.",
+    "1",
+    "1.123"
+])
+@pytest.mark.xfail
+def test_parse_bad_section_index(bad_section_index):
+    with pytest.raises(ParseException):
+        assert section_index.parseString(bad_section_index,parse_all=True)
 
-### We also aren't distinguishing between well-formed and
-### poorly-formed lower-case roman numbers.
-# test_target = sub_paragraph_index
+def test_parse_heading():
+    assert heading.parseString("\nThis is a heading.\n",parse_all=True)
 
-# show_parse("(iiiv.1.2234)")
+def test_parse_subpara():
+    assert sub_paragraph.parseString("(i) Sub-paragraph here\n",parse_all=True)
 
-# test_target = sub_section_index
-# show_parse("(1.2)")
+def test_subpara_structure():
+    parse = sub_paragraph.parseString("(i) Sub-paragraph here\n",parse_all=True)
+    dictionary = parse.asDict()
+    assert dictionary == \
+        {
+            'sub-paragraph index': {
+                'sub-paragraph number': "i"
+            },
+            'sub-paragraph text': "Sub-paragraph here"
+        }
 
-# test_target = heading
-# show_parse("\nThis could be a heading.\n")
+def test_parse_subparalist():
+    assert sub_paragraph_list.parseString("""(i) subparagraph one
+(ii) subparagraph two""",parse_all=True)
 
-# test_target = sub_paragraph
+def test_subparalist_structure():
+    parse = sub_paragraph_list.parseString("""(i) subparagraph one
+(ii) subparagraph two""",parse_all=True)
+    assert len(parse) == 2
+    assert parse[0].asDict() == \
+            {
+                'sub-paragraph index': {
+                    'sub-paragraph number': "i"
+                },
+                'sub-paragraph text': "subparagraph one"
+            }
+    assert parse[1].asDict() == \
+            {
+                'sub-paragraph index': {
+                    'sub-paragraph number': "ii"
+                },
+                'sub-paragraph text': "subparagraph two"
+            }
 
-# show_parse("(i) This is a subparagraph\n")
+def test_parse_paragraph():
+    assert paragraph.parseString("(a) This is paragraph.\n",parse_all=True)
 
-# test_target = sub_paragraph_list
+def test_parse_paragraph_with_subs():
+    assert paragraph.parseString("""(a) this is a paragraph
+  (i) with a subparagraph, and
+  (ii) another subparagraph.
+""",parse_all=True)
 
-# show_parse("""(i) subparagraph one
-# (ii) subparagraph two""")
+def test_parse_subsection():
+    assert sub_section.parseString("(1) This is a subsection.\n",parse_all=True)
 
-# test_target = paragraph
-
-# show_parse("(a) This is a paragraph\n")
-# # print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n", parse_all=True)))
-
-# show_parse("""(a) this is a paragraph
-#   (i) with a subparagraph, and
-#   (ii) another subparagraph.
-# """)
-
-# test_target = sub_section
-
-# show_parse("(1) This is a subsection.\n")
-
-# show_parse("""(1) this is a subsection, with
-#   (a) this as a paragraph, and
-#     (i) with a subparagraph, and
-#     (ii) another subparagraph, followed by
-#   (b) another paragraph.
-# """)
+def test_parse_subsection_with_paras():
+    assert sub_section.parseString("""(1) this is a subsection, with
+  (a) this as a paragraph, and
+    (i) with a subparagraph, and
+    (ii) another subparagraph, followed by
+  (b) another paragraph.
+""", parse_all=True)
 
 # test_target = section
+def test_parse_section():
+    assert section.parseString("1. This is a section.",parse_all=True)
 
-# show_parse("1. This is a section.")
+def test_parse_section_with_subs():
+    assert section.parseString("""1. This is the start of the section text.
+    (1) The section also has sub-sections
+        (a) with paragraphs.
+            (i) Which have sub-paragraphs
+        (b) and another paragraph,
+    (2) and another subsection.
+""", parse_all=True)
 
-# show_parse("""1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
-#     (2) and another subsection.
-# """)
+def test_parse_section_with_heading():
+    assert section.parseString("""
+Heading for Section
+1. This is the start of the section text.
+    (1) The section also has sub-sections
+        (a) with paragraphs.
+            (i) Which have sub-paragraphs
+        (b) and another paragraph,
+    (2) and another subsection.
+""", parse_all=True)
 
-# show_parse("""
-# Heading for Section
-# 1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
-#     (2) and another subsection.
-# """)
+def test_parse_section_with_header_on_sub():
+    assert section.parseString("""
+Heading for Section
+1. This is the start of the section text.
+    (1) The section also has sub-sections
+        (a) with paragraphs.
+            (i) Which have sub-paragraphs
+        (b) and another paragraph,
 
-# show_parse("""
-# Heading for Section
-# 1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
+    Heading for Sub-Section
+    (2) and another subsection.
+""",parse_all=True)
 
-#     Heading for Sub-Section
-#     (2) and another subsection.
-# """)
+def test_parse_title():
+    assert title.parseString("Rock Paper Scissors Act\n",parse_all=True)
 
-# ## TODO: The header for the sub-section is not ending the above paragraph.
+def test_parse_act():
+    assert act.parseString("""Rock Paper Scissors Act
 
-# test_target = title
-# show_parse("Rock Paper Scissors Act\n")
+1. This is the text of the RPS Act,
+  (1) sub-section text.
+""",parse_all=True)
 
-# test_target = act
-# show_parse("""Rock Paper Scissors Act
+def test_parse_empty_section():
+    # Occasionally, the root section is empty, and only sub-sections
+    # have any contents.
+    assert section.parseString("1. (1) This is text of the subsection.",parse_all=True)
 
-# 1. This is the text of the RPS Act,
-#   (1) sub-section text.
-# """)
+def test_parse_sandwich_paragraph():
+    parse = paragraph.parseString("(a) This is the intro\n  (i) this is the sub-para, and\nthere is concluding sandwich text.\n",parse_all=True)
+    assert parse.asDict()['sub-paragraphs'][0]['sub-paragraph text'] == "this is the sub-para, and"
 
-# # Ultimately I want to be able to parse this.
-# test = """
-# Rock Paper Scissors Art
+def test_parse_act_complex():
+    assert act.parseString("""Rock Paper Scissors Art
 
-# Heading
-# 1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
+Heading
+1. This is the start of the section text.
+    (1) The section also has sub-sections
+        (a) with paragraphs.
+            (i) Which have sub-paragraphs
 
-# No Main Section
-# 2. (1) This is a section with no text and an immediate sub-section.
+No Main Section
+2. (1) This is a section with no text and an immediate sub-section.
 
-# Sandwiches
-# 3. This is a section
-#     (a) with direct paragraphs,
-#     (b) like this,
-#     and sandwich text.
+Sandwiches
+3. This is a section
+    (a) with direct paragraphs,
+    (b) like this,
+    and sandwich text.
 
-# Multi-line Text
-# 4. This is a section where the text continues
-#     across more than one line, and should
-#     all be treated as the same piece of text,
-#     (1) followed by a subsection, which also
-#         extends across more than one line.
-# """
-
-# print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n", parse_all=True)))
-# print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n  (i) with a sub-paragraph,\n  (ii) and another sub-paragraph.\n", parse_all=True)))
-
-# print(generate_sub_section(sub_section.parseString("""(1) this is a subsection, with
-#   (a) this as a paragraph, and
-#     (i) with a subparagraph, and
-#     (ii) another subparagraph, followed by
-#   (b) another paragraph.
-# """, parse_all=True)))
-
-# print(generate_section(section.parseString("""1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
-#     (2) and another subsection.
-# """, parse_all=True)))
-
-# print(generate_section(section.parseString("""
-# Heading for Section
-# 1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
-#     (2) and another subsection.
-# """, parse_all=True)))
-
-# print(generate_act(act.parseString("""Rock Paper Scissors Act
-    
-# 1. This is the text of the RPS Act,
-#   (1) sub-section text.
-# """, parse_all=True)))
+Multi-line Text
+4. This is a section where the text continues
+    across more than one line, and should
+    all be treated as the same piece of text,
+    (1) followed by a subsection, which also
+        extends across more than one line.
+""",parse_all=True)
