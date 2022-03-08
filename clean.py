@@ -149,3 +149,11 @@ def generate_act(node):
     output += "</body>"
   output += "</act></akomaNtoso>"
   return output
+
+import sys
+if __name__ == '__main__':
+  file = open(sys.argv[1])
+  text = file.read()
+  file.close()
+  parsed = act.parseString(text,parse_all=True)
+  print(generate_act(parsed))
