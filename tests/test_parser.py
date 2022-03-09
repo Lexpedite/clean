@@ -3,7 +3,6 @@ from ..clean import *
 
 # Insert Indexes are used to add sections to a text between amendments,
 # so as to avoid the need to renumber items and break cross-references.
-
 class TestInsertIndex:
 
     @pytest.mark.parametrize("good_insert_index",[
@@ -26,7 +25,7 @@ class TestSubParagraph:
     @pytest.mark.parametrize("bad_subparagraph_index",[
         "(b)", #Must be roman numerals
         "(M)", # must be lower-case
-        "(iivivi)", # TODO: must be well-formed roman numeral
+        "(iivivi)", # must be well-formed roman numeral
     ])
     def test_parse_bad_subpara_index(self, bad_subparagraph_index):
         with pytest.raises(ParseException):
@@ -233,7 +232,6 @@ class TestHeading:
 
 
 
-# test_target = section
 class TestTitle:
     def test_parse_title(self):
         assert title.parseString("Rock Paper Scissors Act\n\n",parse_all=True)

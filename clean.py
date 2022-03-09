@@ -3,10 +3,6 @@
 # legal documents, and functions to generate Akoma Ntoso versions
 # of the documents expressed in that language.
 
-# TODO: Headers are showing up as part of the previous text.
-# TODO: Deal with sandwich sections.
-# TODO: Get the AN Generator to use insert indexes.
-
 from pyparsing import *
 import string
 
