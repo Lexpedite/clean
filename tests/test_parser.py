@@ -236,14 +236,15 @@ class TestHeading:
 # test_target = section
 class TestTitle:
     def test_parse_title(self):
-        assert title.parseString("Rock Paper Scissors Act\n",parse_all=True)
+        assert title.parseString("Rock Paper Scissors Act\n\n",parse_all=True)
 
 class TestAct:
     def test_parse_act(self):
         assert act.parseString("""Rock Paper Scissors Act
 
+Heading
 1. This is the text of the RPS Act,
-(1) sub-section text.
+  (1) sub-section text.
 """,parse_all=True)
 
     def test_parse_act_complex(self):
@@ -257,20 +258,20 @@ Heading
 
 No Main Section
 2.
-(1) This is a section with no text and an immediate sub-section.
+  (1) This is a section with no text and an immediate sub-section.
 
 Sandwiches
 3. This is a section
     (a) with direct paragraphs,
     (b) like this,
-    and sandwich text.
+and sandwich text.
 
 Multi-line Text
 4. This is a section where the text continues
-    across more than one line, and should
-    all be treated as the same piece of text,
+across more than one line, and should
+all be treated as the same piece of text,
     (1) followed by a subsection, which also
-        extends across more than one line.
+    extends across more than one line.
 """,parse_all=True)
 
 

@@ -8,10 +8,11 @@ Players
   (3) Scissors.
 
 Defeating Relationships
-3. The signs have the following relationships:
+3.
   (1) Rock beats Scissors,
   (2) Scissors beats Paper, and
   (3) Paper beats Rock.
 
 Winner
-4. The winner of a game is the player who throws a sign that beats the sign of the other player.
+4. The winner of a game is the player who throws
+a sign that beats the sign of the other player.

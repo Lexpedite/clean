@@ -5,7 +5,6 @@
 
 # TODO: Headers are showing up as part of the previous text.
 # TODO: Deal with sandwich sections.
-# TODO: Make it possible to have empty sections.
 # TODO: Get the AN Generator to use insert indexes.
 
 from pyparsing import *
@@ -58,24 +57,18 @@ paragraph = Forward()
 sub_section = Forward()
 section = Forward()
 numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index
-heading = Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text') + NL
+legal_text = Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")
+heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text') + NL
 title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL + BLANK_LINE
-sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")('sub-paragraph text')
+sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + legal_text('sub-paragraph text')
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
-paragraph <<= paragraph_index('paragraph index') + Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")('paragraph text') + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')
+paragraph <<= paragraph_index('paragraph index') + legal_text('paragraph text') + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')
 paragraph_list = OneOrMore(Group(paragraph))
-sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")('sub-section text') + Optional(IndentedBlock(paragraph_list,grouped=False))('paragraphs')
+sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + legal_text('sub-section text') + Optional(IndentedBlock(paragraph_list,grouped=False))('paragraphs')
 sub_section_list = OneOrMore(Group(sub_section))
 section <<= Optional(heading)('section header') + \
     section_index('section index') + \
-    Combine(
-      ZeroOrMore(
-        text_line, 
-        stop_on=numbered_part
-      ), 
-      adjacent=False, 
-      join_string=" "
-    )('section text') + \
+    (legal_text('section text') ^ NL) + \
     Optional(
       IndentedBlock(
         sub_section_list,
@@ -141,15 +134,17 @@ def generate_section(node):
     output += node['heading text']
     output += "</heading>"
   if 'sub-sections' in node:
-    output += "<intro><p>"
-    output += node['section text']
-    output += "</p></intro>"
+    if 'section text' in node:
+      output += "<intro><p>"
+      output += node['section text']
+      output += "</p></intro>"
     for p in node['sub-sections']:
       output += generate_sub_section(p, prefix)
   else:
-    output += "<content><p>"
-    output += node['section text']
-    output += "</p></content>"
+    if 'section text' in node:
+      output += "<content><p>"
+      output += node['section text']
+      output += "</p></content>"
   output += "</section>"
   return output
 
