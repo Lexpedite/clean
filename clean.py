@@ -4,7 +4,6 @@
 # of the documents expressed in that language.
 
 # TODO: Headers are showing up as part of the previous text.
-# TODO: Deal with multi-line text.
 # TODO: Deal with sandwich sections.
 # TODO: Make it possible to have empty sections.
 # TODO: Get the AN Generator to use insert indexes.
@@ -12,13 +11,18 @@
 from pyparsing import *
 import string
 
+ParserElement.setDefaultWhitespaceChars(' \t')
 # Define terms for parser
 OPEN = "("
 CLOSE = ")"
 DOT = "."
-EOL = LineEnd().suppress()
-BLANK_LINE = Suppress(line_start) + EOL
+SOL = Suppress(line_start)
+NL = Suppress(Literal('\n'))
+BLANK_LINE = SOL + NL
 lowercase_roman_numerals = ['i','v','x','l','c','d','m']
+
+text_line = Combine(OneOrMore(Word(printables)),adjacent=False,join_string=" ") + NL
+text_block = Combine(OneOrMore(text_line),adjacent=False,join_string=" ") + BLANK_LINE
 
 # Parser elements for lowercase roman numerals
 rn_thousands = ZeroOrMore(Literal('m'))
@@ -53,16 +57,31 @@ sub_paragraph = Forward()
 paragraph = Forward()
 sub_section = Forward()
 section = Forward()
-numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ BLANK_LINE
-heading = EOL + lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text') + EOL
-title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + EOL
-sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('sub-paragraph text') + EOL
+numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index
+heading = Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text') + NL
+title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL + BLANK_LINE
+sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")('sub-paragraph text')
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
-paragraph <<= paragraph_index + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('paragraph text') + EOL + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')
+paragraph <<= paragraph_index('paragraph index') + Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")('paragraph text') + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')
 paragraph_list = OneOrMore(Group(paragraph))
-sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('sub-section text') + EOL + Optional(IndentedBlock(paragraph_list,grouped=False))('paragraphs')
+sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")('sub-section text') + Optional(IndentedBlock(paragraph_list,grouped=False))('paragraphs')
 sub_section_list = OneOrMore(Group(sub_section))
-section <<= Optional(heading)('section header') + section_index('section index') + Combine(ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('section text') + EOL + Optional(IndentedBlock(sub_section_list,grouped=False)('sub-sections'))
+section <<= Optional(heading)('section header') + \
+    section_index('section index') + \
+    Combine(
+      ZeroOrMore(
+        text_line, 
+        stop_on=numbered_part
+      ), 
+      adjacent=False, 
+      join_string=" "
+    )('section text') + \
+    Optional(
+      IndentedBlock(
+        sub_section_list,
+        grouped=False
+      )('sub-sections')
+    )
 act = title('title') + ZeroOrMore(Group(section))('body')
 
 
@@ -85,8 +104,7 @@ def generate_paragraph(node, prefix=""):
     output += node['paragraph text']
     output += "</p></intro>"
     subparagraphs_list = node['sub-paragraphs']
-    for sp in subparagraphs_list[0]:
-      # output += generate_sub_paragraph(sp)
+    for sp in subparagraphs_list:
       output += generate_sub_paragraph(sp, p_prefix)
   else:
     output += "<content><p>"
@@ -104,7 +122,7 @@ def generate_sub_section(node, prefix=""):
     output += "<intro><p>"
     output += node['sub-section text']
     output += "</p></intro>"
-    for p in node['paragraphs'][0]:
+    for p in node['paragraphs']:
       output += generate_paragraph(p, ss_prefix)
   else:
     output += "<content><p>"
@@ -126,7 +144,7 @@ def generate_section(node):
     output += "<intro><p>"
     output += node['section text']
     output += "</p></intro>"
-    for p in node['sub-sections'][0]:
+    for p in node['sub-sections']:
       output += generate_sub_section(p, prefix)
   else:
     output += "<content><p>"
