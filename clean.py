@@ -55,7 +55,7 @@ section = Forward()
 numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index
 legal_text = Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")
 heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text') + NL
-title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL + BLANK_LINE
+title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL
 sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + legal_text('sub-paragraph text')
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
 paragraph <<= paragraph_index('paragraph index') + legal_text('paragraph text') + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')

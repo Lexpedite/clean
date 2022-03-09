@@ -206,12 +206,14 @@ Heading for Section
 """, parse_all=True)
 
     def test_parse_section_with_header_on_sub(self):
-        assert section.parseString("""Heading for Section
+        assert section.parseString("""
+Heading for Section
 1. This is the start of the section text.
     (1) The section also has sub-sections
         (a) with paragraphs.
             (i) Which have sub-paragraphs
         (b) and another paragraph,
+
     Heading for Sub-Section
     (2) and another subsection.
 """,parse_all=True)
