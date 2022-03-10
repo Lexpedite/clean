@@ -185,6 +185,9 @@ def generate_act(node):
   output += "</act></akomaNtoso>"
   return output
 
+def generate_akn(text):
+  return generate_act(act.parseString(addExplicitIndents(text)))
+
 import sys
 if __name__ == '__main__':
   file = open(sys.argv[1])
