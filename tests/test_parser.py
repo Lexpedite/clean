@@ -1,5 +1,40 @@
+from sysconfig import parse_config_h
 import pytest
 from ..clean import *
+from pyparsing import ParseResults
+
+class TestIndents:
+
+# Note that parseString returns ParseResults([],{}) if all of the
+# elements of the parse are suppressed, and that ParseResults([],{})
+# is falsish. Therefore, to test for parsing of items that are
+# completely suppressed, you assert that .dump() returns anything.
+
+    def test_indent(self):
+        assert UP.parseString("INDENT",parse_all=True).dump()
+
+    def test_undent(self):
+        assert DOWN.parseString("UNDENT",parse_all=True).dump()
+
+    def test_blank(self):
+        assert BLANK_LINE.parseString("\n",parse_all=True).dump()
+
+    @pytest.mark.parametrize('numpart',[
+        "\n   (i)",
+        "\n (a)",
+        "\n1.",
+        "\n(1)",
+        "UNDENT"
+    ])
+    def test_numpart(self,numpart):
+        assert numbered_part.parseString(numpart,parse_all=True).dump()
+
+    def test_indented_subparas(self):
+        parse = (UP + sub_paragraph_list + DOWN).parseString("""INDENT
+    (i) with a subparagraph, and
+    (ii) another subparagraph.
+UNDENT""", parse_all=True)
+        assert parse
 
 # Insert Indexes are used to add sections to a text between amendments,
 # so as to avoid the need to renumber items and break cross-references.
@@ -14,10 +49,10 @@ class TestInsertIndex:
 
 class TestSubParagraph:
     @pytest.mark.parametrize("good_subparagraph_index",[
-        "(viii)",
-        "(c)",
-        "(i.123.4)",
-        "(iv.5)"
+        "\n(viii)",
+        "\n(c)",
+        "\n(i.123.4)",
+        "\n(iv.5)"
     ])
     def test_parse_subpara_index(self, good_subparagraph_index):
         assert sub_paragraph_index.parseString(good_subparagraph_index,parse_all=True)
@@ -32,73 +67,74 @@ class TestSubParagraph:
             assert sub_paragraph_index.parseString(bad_subparagraph_index,parse_all=True)
 
     def test_parse_subpara(self):
-        parse = sub_paragraph.parseString("(i) Sub-paragraph here\n",parse_all=True) 
+        parse = sub_paragraph.parseString("\n(i) Sub-paragraph here",parse_all=True) 
         assert parse
 
     def test_parse_multiline_subpara(self):
-        parse = sub_paragraph.parseString("(i) This is the start\nand this is the rest\n",parse_all=True)
+        parse = sub_paragraph.parseString("\n(i) This is the start\nand this is the rest\n",parse_all=True)
         assert parse.asDict()['sub-paragraph text'] == "This is the start and this is the rest"
 
     def test_parse_multiline_subpara_stop_new(self):
-        parse = sub_paragraph.parseString("(i) This is the start\nand this is the rest\n(ii) Test ignore")
+        parse = sub_paragraph.parseString("\n(i) This is the start\nand this is the rest\n(ii) Test ignore")
         assert parse.asDict()['sub-paragraph text'] == "This is the start and this is the rest"
 
     def test_parse_multiline_subpara_stop_para(self):
-        parse = sub_paragraph.parseString("(i) This is the start\nand this is the rest\n(b) test ignore")
+        parse = sub_paragraph.parseString("\n(i) This is the start\nand this is the rest\nUNDENT\n(b) test ignore")
         assert parse.asDict()['sub-paragraph text'] == "This is the start and this is the rest"
 
     def test_subpara_structure(self):
-        parse = sub_paragraph.parseString("(i) Sub-paragraph here\n",parse_all=True)
+        parse = sub_paragraph.parseString("\n(i) Sub-paragraph here",parse_all=True)
         dictionary = parse.asDict()
         assert dictionary == \
             {
-                'sub-paragraph index': {
+                'sub-paragraph index': [{
                     'sub-paragraph number': "i"
-                },
+                }],
                 'sub-paragraph text': "Sub-paragraph here"
             }
 
     def test_parse_subparalist(self):
-        parse = sub_paragraph_list.parseString("""(i) subparagraph one
-    (ii) subparagraph two\n""",parse_all=True)
+        parse = sub_paragraph_list.parseString("""\n(i) subparagraph one
+    (ii) subparagraph two""",parse_all=True)
         assert parse
 
     
     def test_subparalist_structure(self):
-        parse = sub_paragraph_list.parseString("""(i) subparagraph one
-    (ii) subparagraph two\n""",parse_all=True)
+        parse = sub_paragraph_list.parseString("""\n(i) subparagraph one
+    (ii) subparagraph two""",parse_all=True)
         assert len(parse) == 2
         assert parse[0].asDict() == \
                 {
-                    'sub-paragraph index': {
+                    'sub-paragraph index': [{
                         'sub-paragraph number': "i"
-                    },
+                    }],
                     'sub-paragraph text': "subparagraph one"
                 }
         assert parse[1].asDict() == \
                 {
-                    'sub-paragraph index': {
+                    'sub-paragraph index': [{
                         'sub-paragraph number': "ii"
-                    },
+                    }],
                     'sub-paragraph text': "subparagraph two"
                 }
 
 class TestParagraph:
     @pytest.mark.parametrize("good_paragraph_index",[
-        "(aa)",
-        "(ab.1)",
-        "(aaa.1.2345)"
+        "\n(aa)",
+        "\n(ab.1)",
+        "\n(aaa.1.2345)"
     ])
     def test_parse_paragraph_index(self, good_paragraph_index):
         assert paragraph_index.parseString(good_paragraph_index,parse_all=True)
 
     @pytest.mark.parametrize("bad_paragraph_index",[
-        "(1a)",
-        "<a>",
-        "(a1)",
-        "(aa",
-        "a)",
-        "(A)"
+        "\n(1a)",
+        "\n<a>",
+        "\n(a1)",
+        "\n(aa",
+        "\na)",
+        "\n(A)",
+        "(a)"
     ])
     @pytest.mark.xfail
     def test_parse_bad_paragraph_index(self, bad_paragraph_index):
@@ -106,40 +142,44 @@ class TestParagraph:
             assert paragraph_index.parseString(bad_paragraph_index,parse_all=True)
 
     def test_parse_paragraph_index_structure(self):
-        assert paragraph_index.parseString("(a)",parse_all=True)['paragraph number'] == "a"
+        assert paragraph_index.parseString("\n(a)",parse_all=True)['paragraph number'] == "a"
 
     def test_parse_paragraph(self):
-        assert paragraph.parseString("(a) This is paragraph.\n",parse_all=True)
+        assert paragraph.parseString("\n(a) This is paragraph.\n",parse_all=True)
 
     def test_parse_paragraph_with_subs(self):
-        assert paragraph.parseString("""(a) this is a paragraph
+        assert paragraph.parseString("""
+(a) this is a paragraph
+INDENT
     (i) with a subparagraph, and
     (ii) another subparagraph.
-    """,parse_all=True)
+UNDENT""",parse_all=True)
 
     def test_parse_sandwich_paragraph(self):
-        parse = paragraph.parseString("(a) This is the intro\n  (i) this is the sub-para, and\nthere is concluding sandwich text.\n",parse_all=True)
+        parse = paragraph.parseString("\n(a) This is the intro\nINDENT\n  (i) this is the sub-para, and\nUNDENT\nthere is concluding sandwich text.",parse_all=True)
         assert parse.asDict()['sub-paragraphs'][0]['sub-paragraph text'] == "this is the sub-para, and"
+        assert parse.asDict()['paragraph post'] == "there is concluding sandwich text."
 
     def test_parse_multiline_paragraph(self):
-        parse = paragraph.parseString("(a) This is the start\nand this is the rest\n",parse_all=True)
+        parse = paragraph.parseString("\n(a) This is the start\nand this is the rest\n",parse_all=True)
         assert parse.asDict()['paragraph text'] == "This is the start and this is the rest"
 
 
 class TestSubSection:
     @pytest.mark.parametrize("good_sub_section_index",[
-        "(12)",
-        "(4.1)",
-        "(234.1.2345)"
+        "\n(12)",
+        "\n(4.1)",
+        "\n(234.1.2345)"
     ])
     def test_parse_sub_section_index(self, good_sub_section_index):
         assert sub_section_index.parseString(good_sub_section_index,parse_all=True)
 
     @pytest.mark.parametrize("bad_sub_section_index",[
-        "(12a)",
-        "(4.1",
-        "234.1.2345)",
-        "(x)"
+        "\n(12a)",
+        "\n(4.1",
+        "\n234.1.2345)",
+        "\n(x)",
+        "(1)"
     ])
     @pytest.mark.xfail
     def test_parse_bad_sub_section_index(self, bad_sub_section_index):
@@ -147,35 +187,54 @@ class TestSubSection:
             assert sub_section_index.parseString(bad_sub_section_index,parse_all=True)
 
     def test_parse_subsection(self):
-        assert sub_section.parseString("(1) This is a subsection.\n",parse_all=True)
+        assert sub_section.parseString("\n(1) This is a subsection.\n",parse_all=True)
 
     def test_parse_subsection_with_paras(self):
-        assert sub_section.parseString("""(1) this is a subsection, with
+        assert sub_section.parseString("""
+(1) this is a subsection, with
+INDENT
     (a) this as a paragraph, and
+INDENT
         (i) with a subparagraph, and
         (ii) another subparagraph, followed by
+UNDENT
     (b) another paragraph.
-    """, parse_all=True)
+UNDENT""", parse_all=True)
+
+    def test_parse_sandwich_subsection_with_paras(self):
+        assert sub_section.parseString("""
+(1) this is a subsection, with
+INDENT
+    (a) this as a paragraph, and
+INDENT
+        (i) with a subparagraph, and
+        (ii) another subparagraph, followed by
+UNDENT
+    (b) another paragraph.
+UNDENT
+and this closing text.""", parse_all=True)
+
 
     def test_parse_multiline_subsection(self):
-        parse = sub_section.parseString("(1) This is the start\nand this is the rest\n",parse_all=True)
+        parse = sub_section.parseString("\n(1) This is the start\nand this is the rest\n",parse_all=True)
         assert parse.asDict()['sub-section text'] == "This is the start and this is the rest"
 
 
 class TestSection:
     
     @pytest.mark.parametrize("good_section_index",[
-        "1.",
-        "12345.",
-        "1.2."
+        "\n1.",
+        "\n12345.",
+        "\n1.2."
     ])
     def test_parse_section_index(self, good_section_index):
         assert section_index.parseString(good_section_index,parse_all=True)
 
     @pytest.mark.parametrize("bad_section_index",[
-        "A.",
-        "1",
-        "1.123"
+        "\nA.",
+        "\n1",
+        "\n1.123",
+        "1."
     ])
     @pytest.mark.xfail
     def test_parse_bad_section_index(self, bad_section_index):
@@ -183,60 +242,85 @@ class TestSection:
             assert section_index.parseString(bad_section_index,parse_all=True)
 
     def test_parse_section(self):
-        assert section.parseString("1. This is a section.\n",parse_all=True)
+        assert section.parseString("\n1. This is a section.",parse_all=True)
 
     def test_parse_section_with_subs(self):
-        assert section.parseString("""1. This is the start of the section text.
+        assert section.parseString("""
+1. This is the start of the section text.
+INDENT
     (1) The section also has sub-sections
+INDENT
         (a) with paragraphs.
+INDENT
             (i) Which have sub-paragraphs
+UNDENT
         (b) and another paragraph,
+UNDENT
     (2) and another subsection.
-""", parse_all=True)
+UNDENT""", parse_all=True)
 
     def test_parse_section_with_heading(self):
         assert section.parseString("""
 Heading for Section
 1. This is the start of the section text.
+INDENT
     (1) The section also has sub-sections
+INDENT
         (a) with paragraphs.
+INDENT
             (i) Which have sub-paragraphs
+UNDENT
         (b) and another paragraph,
+UNDENT
     (2) and another subsection.
-""", parse_all=True)
+UNDENT""", parse_all=True)
 
     def test_parse_section_with_header_on_sub(self):
         assert section.parseString("""
 Heading for Section
 1. This is the start of the section text.
+INDENT
     (1) The section also has sub-sections
+INDENT
         (a) with paragraphs.
+INDENT
             (i) Which have sub-paragraphs
+UNDENT
         (b) and another paragraph,
+UNDENT
 
     Heading for Sub-Section
     (2) and another subsection.
-""",parse_all=True)
+UNDENT""",parse_all=True)
 
     def test_parse_empty_section(self):
         # Occasionally, the root section is empty, and only sub-sections
         # have any contents.
-        assert section.parseString("1.\n  (1) This is text of the subsection.\n",parse_all=True)
+        assert section.parseString("\n1.\nINDENT\n  (1) This is text of the subsection.\nUNDENT",parse_all=True)
 
     def test_parse_multiline_section(self):
-        parse = section.parseString("1. This is the start\nand this is the rest\n",parse_all=True)
+        parse = section.parseString("\n1. This is the start\nand this is the rest\n",parse_all=True)
         assert parse.asDict()['section text'] == "This is the start and this is the rest"
 
+    def test_parse_section_to_paragraph(self):
+        text = """
+3. This is a section
+INDENT
+    (a) with direct paragraphs,
+    (b) like this,
+UNDENT"""
+        parse = section.parseString(text,parse_all=True)
+        assert parse
 
 class TestHeading:
     def test_parse_heading(self):
-        assert heading.parseString("\nThis is a heading.\n",parse_all=True)
+        assert heading.parseString("\nThis is a heading.",parse_all=True)
 
 
 
 class TestTitle:
     def test_parse_title(self):
-        assert title.parseString("Rock Paper Scissors Act\n\n",parse_all=True)
+        assert title.parseString("Rock Paper Scissors Act\n",parse_all=True)
 
 class TestAct:
     def test_parse_act(self):
@@ -244,35 +328,47 @@ class TestAct:
 
 Heading
 1. This is the text of the RPS Act,
+INDENT
   (1) sub-section text.
-""",parse_all=True)
+UNDENT""",parse_all=True)
 
     def test_parse_act_complex(self):
         assert act.parseString("""Rock Paper Scissors Art
 
 Heading
 1. This is the start of the section text.
+INDENT
     (1) The section also has sub-sections
+INDENT
         (a) with paragraphs.
+INDENT
             (i) Which have sub-paragraphs
+UNDENT
+UNDENT
+UNDENT
 
 No Main Section
 2.
+INDENT
   (1) This is a section with no text and an immediate sub-section.
+UNDENT
 
 Sandwiches
 3. This is a section
+INDENT
     (a) with direct paragraphs,
     (b) like this,
+UNDENT
 and sandwich text.
 
 Multi-line Text
 4. This is a section where the text continues
 across more than one line, and should
 all be treated as the same piece of text,
+INDENT
     (1) followed by a subsection, which also
     extends across more than one line.
-""",parse_all=True)
+UNDENT""",parse_all=True)
 
 
 

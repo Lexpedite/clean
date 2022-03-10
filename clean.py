@@ -11,13 +11,15 @@ ParserElement.setDefaultWhitespaceChars(' \t')
 OPEN = "("
 CLOSE = ")"
 DOT = "."
-SOL = Suppress(line_start)
+SOL = line_start
 NL = Suppress(Literal('\n'))
 BLANK_LINE = SOL + NL
+UP = SOL + Literal("INDENT")
+DOWN = SOL + Literal("UNDENT")
 lowercase_roman_numerals = ['i','v','x','l','c','d','m']
 
-text_line = Combine(OneOrMore(Word(printables)),adjacent=False,join_string=" ") + NL
-text_block = Combine(OneOrMore(text_line),adjacent=False,join_string=" ") + BLANK_LINE
+text_line = Combine(OneOrMore(Word(printables)),adjacent=False,join_string=" ")
+# text_block = Combine(OneOrMore(text_line),adjacent=False,join_string=" ") + BLANK_LINE
 
 # Parser elements for lowercase roman numerals
 rn_thousands = ZeroOrMore(Literal('m'))
@@ -44,33 +46,54 @@ lowercase_roman_number = Word(lowercase_roman_numerals)
 number = Word(nums) 
 insert_index = Forward()
 insert_index <<= Group(Suppress(DOT) + number("insert number")) + Optional(insert_index)
-paragraph_index = Suppress(OPEN) + Word(string.ascii_lowercase, string.ascii_lowercase)('paragraph number') + Optional(insert_index)('insert index') + Suppress(CLOSE)
-section_index = number("section number") + Optional(insert_index)('insert index') + Suppress(DOT)
-sub_paragraph_index = Group(Suppress(OPEN) + lowercase_roman_number('sub-paragraph number') + Optional(insert_index)('insert index') + Suppress(CLOSE) )
-sub_section_index = Suppress(OPEN) + number('sub-section number') + Optional(insert_index)('insert index') + Suppress(CLOSE)
+paragraph_index = NL + Suppress(OPEN) + Word(string.ascii_lowercase, string.ascii_lowercase)('paragraph number') + Optional(insert_index)('insert index') + Suppress(CLOSE)
+section_index = NL + number("section number") + Optional(insert_index)('insert index') + Suppress(DOT)
+sub_paragraph_index =  NL + Group(Suppress(OPEN) + lowercase_roman_number('sub-paragraph number') + Optional(insert_index)('insert index') + Suppress(CLOSE))
+sub_section_index = NL + Suppress(OPEN) + number('sub-section number') + Optional(insert_index)('insert index') + Suppress(CLOSE)
 sub_paragraph = Forward()
 paragraph = Forward()
 sub_section = Forward()
 section = Forward()
-numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index
-legal_text = Combine(ZeroOrMore(text_line, stop_on=numbered_part), adjacent=False, join_string=" ")
-heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text') + NL
+numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP
+legal_text = Combine(ZeroOrMore(NL ^ Word(printables), stop_on=numbered_part).set_debug(), adjacent=False, join_string=" ")
+heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
 title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL
 sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + legal_text('sub-paragraph text')
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
-paragraph <<= paragraph_index('paragraph index') + legal_text('paragraph text') + Optional(IndentedBlock(sub_paragraph_list,grouped=False))('sub-paragraphs')
+paragraph <<= \
+  paragraph_index('paragraph index') + \
+  legal_text('paragraph text') + \
+  Optional(
+    (Suppress(UP) + \
+    sub_paragraph_list + \
+    Suppress(DOWN))('sub-paragraphs') + \
+    Optional(legal_text('paragraph post'))
+  )  
 paragraph_list = OneOrMore(Group(paragraph))
-sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + legal_text('sub-section text') + Optional(IndentedBlock(paragraph_list,grouped=False))('paragraphs')
-sub_section_list = OneOrMore(Group(sub_section))
-section <<= Optional(heading)('section header') + \
-    section_index('section index') + \
-    (legal_text('section text') ^ NL) + \
-    Optional(
-      IndentedBlock(
-        sub_section_list,
-        grouped=False
-      )('sub-sections')
+sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub-section index') + legal_text('sub-section text') + Optional( \
+    (Suppress(UP) + \
+    paragraph_list + \
+    Suppress(DOWN))('paragraphs') + \
+    Optional(legal_text('sub-section post'))
     )
+sub_section_list = OneOrMore(Group(sub_section))
+empty_section = Optional(heading)('section header') + \
+    section_index('section index') + \
+    Suppress(UP) + \
+    sub_section_list('sub-sections') + \
+    Suppress(DOWN)
+full_section = Optional(heading)('section header') + \
+    section_index('section index') + \
+    legal_text('section text') + \
+    Optional( 
+    (Suppress(UP) + \
+    (sub_section_list('sub-sections') ^ paragraph_list('paragraphs')) + \
+    Suppress(DOWN)) + \
+    Optional(legal_text('section post'))
+    )
+section <<= full_section ^ empty_section
+# Only for sections, the initial text is optional. if it is missing,
+# there can be no post text.
 act = title('title') + ZeroOrMore(Group(section))('body')
 
 
@@ -169,3 +192,36 @@ if __name__ == '__main__':
   file.close()
   parsed = act.parseString(text,parse_all=True)
   print(generate_act(parsed))
+
+def addExplicitIndents(string):
+  """A function to add explicit indents to a text file for block-based encodings,
+  because most of the indent features of PyParsing don't work properly."""
+
+  UP = "INDENT\n"
+  DOWN = "UNDENT\n"
+
+  levels = [0]
+  output = ""
+
+  for line in string.splitlines():
+    level = len(line) - len(line.lstrip(' '))
+    if level == levels[-1]: # The level has not changed
+      output += line + '\n'
+    elif level > levels[-1]: # The indent has increased
+      levels.append(level)
+      output += UP
+      output += line + '\n'
+    elif level < levels[-1]: # The indent has gone down
+      if level in levels: #We are returning to a previous level
+        while level != levels[-1]:
+          output += DOWN
+          levels.pop()
+        output += line + '\n'
+      else:
+        raise Exception("Unindent to a level not previously used in " + line)
+  # At this point, it is possible that we have a high indentation level,
+  # and we need to add UNDENTS to close out the blocks
+  while len(levels) > 1:
+    output += DOWN
+    levels.pop()
+  return output
