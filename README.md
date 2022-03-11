@@ -11,14 +11,14 @@ representations of Canadian statutes and regulations.
 
 ## Installation
 
-TODO
+`pip install clean-law`
 
 ## Usage
 
 Write your markup, load it into a string variable, and run 
 
 ```python
-from clean import generate_akn
+from clean.clean import generate_akn
 
 text = """Title
 
