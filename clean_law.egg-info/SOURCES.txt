@@ -1,0 +1,11 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+clean/__init__.py
+clean/clean.py
+clean_law.egg-info/PKG-INFO
+clean_law.egg-info/SOURCES.txt
+clean_law.egg-info/dependency_links.txt
+clean_law.egg-info/requires.txt
+clean_law.egg-info/top_level.txt
