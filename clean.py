@@ -46,15 +46,15 @@ lowercase_roman_number = Word(lowercase_roman_numerals)
 number = Word(nums) 
 insert_index = Forward()
 insert_index <<= Group(Suppress(DOT) + number("insert number")) + Optional(insert_index)
-paragraph_index = NL + Suppress(OPEN) + Word(string.ascii_lowercase, string.ascii_lowercase)('paragraph number') + Optional(insert_index)('insert index') + Suppress(CLOSE)
-section_index = NL + number("section number") + Optional(insert_index)('insert index') + Suppress(DOT)
-sub_paragraph_index =  NL + Group(Suppress(OPEN) + lowercase_roman_number('sub-paragraph number') + Optional(insert_index)('insert index') + Suppress(CLOSE))
-sub_section_index = NL + Suppress(OPEN) + number('sub-section number') + Optional(insert_index)('insert index') + Suppress(CLOSE)
+paragraph_index = NL + Suppress(OPEN) + original_text_for(Word(string.ascii_lowercase)('paragraph number') + Optional(insert_index)('insert index')) + Suppress(CLOSE)
+section_index = NL + original_text_for(number("section number") + Optional(insert_index)('insert index')) + Suppress(DOT)
+sub_paragraph_index =  NL + Suppress(OPEN) + original_text_for(lowercase_roman_number('sub-paragraph number') + Optional(insert_index)('insert index')) + Suppress(CLOSE)
+sub_section_index = NL + Suppress(OPEN) + original_text_for(number('sub-section number') + Optional(insert_index)('insert index')) + Suppress(CLOSE)
 sub_paragraph = Forward()
 paragraph = Forward()
 sub_section = Forward()
 section = Forward()
-numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP
+numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP ^ BLANK_LINE
 legal_text = Combine(ZeroOrMore(NL ^ Word(printables), stop_on=numbered_part).set_debug(), adjacent=False, join_string=" ")
 heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
 title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL
@@ -94,30 +94,34 @@ full_section = Optional(heading)('section header') + \
 section <<= full_section ^ empty_section
 # Only for sections, the initial text is optional. if it is missing,
 # there can be no post text.
-act = title('title') + ZeroOrMore(Group(section))('body')
+act = title('title') + ZeroOrMore(Group(section))('body') + ZeroOrMore(NL)
 
 
 def generate_sub_paragraph(node, prefix=""):
-  eId = prefix + "__subpara_" + node['sub-paragraph index']['sub-paragraph number']
+  eId = prefix + "__subpara_" + node['sub-paragraph index'][0].replace('.','_')
   output = "<subParagraph eId=\"" + eId + "\"><num>"
-  output += node['sub-paragraph index']['sub-paragraph number']
+  output += node['sub-paragraph index'][0]
   output += "</num><content><p>"
   output += node['sub-paragraph text']
   output += "</p></content></subParagraph>"
   return output
 
 def generate_paragraph(node, prefix=""):
-  p_prefix = prefix + "__para_" + node['paragraph number']
+  p_prefix = prefix + "__para_" + node['paragraph index'][0].replace('.','_')
   output = "<paragraph eId=\"" + p_prefix + "\"><num>"
-  output += node['paragraph number']
+  output += node['paragraph index'][0]
   output += "</num>"
-  if 'sub-paragraphs' in node:
+  if 'sub-paragraphs' in node and node['sub-paragraphs'] != '':
     output += "<intro><p>"
     output += node['paragraph text']
     output += "</p></intro>"
     subparagraphs_list = node['sub-paragraphs']
     for sp in subparagraphs_list:
       output += generate_sub_paragraph(sp, p_prefix)
+      if node['paragraph post'] != '':
+        output += "<wrapup><p>"
+        output += node['paragraph post']
+        output += "</p></wrapup>"
   else:
     output += "<content><p>"
     output += node['paragraph text']
@@ -126,16 +130,24 @@ def generate_paragraph(node, prefix=""):
   return output
 
 def generate_sub_section(node, prefix=""):
-  ss_prefix = prefix + "__subsec_" + node['sub-section number']
+  ss_prefix = prefix + "__subsec_" + node['sub-section index'][0].replace('.','_')
   output = "<subSection eId=\"" + ss_prefix + "\"><num>"
-  output += node['sub-section number']
+  output += node['sub-section index'][0]
   output += "</num>"
-  if 'paragraphs' in node:
+  if 'heading text' in node and node['heading text'] != '':
+    output += "<heading>"
+    output += node['heading text']
+    output += "</heading>"
+  if 'paragraphs' in node and node['paragraphs'] != '':
     output += "<intro><p>"
     output += node['sub-section text']
     output += "</p></intro>"
     for p in node['paragraphs']:
       output += generate_paragraph(p, ss_prefix)
+    if node['sub-section post'] != '':
+      output += "<wrapup><p>"
+      output += node['sub-section post']
+      output += "</p></wrapup>"
   else:
     output += "<content><p>"
     output += node['sub-section text']
@@ -144,23 +156,31 @@ def generate_sub_section(node, prefix=""):
   return output
 
 def generate_section(node):
-  prefix = "sec_" + node['section number']
+  prefix = "sec_" + node['section index'][0].replace('.','_')
   output = "<section eId=\"" + prefix + "\"><num>"
-  output += node['section number']
+  output += node['section index'][0]
   output += "</num>"
-  if 'heading text' in node:
+  if 'heading text' in node and node['heading text'] != '':
     output += "<heading>"
     output += node['heading text']
     output += "</heading>"
-  if 'sub-sections' in node:
-    if 'section text' in node:
+  if 'sub-sections' in node or 'paragraphs' in node:
+    if node['section text'] != '':
       output += "<intro><p>"
       output += node['section text']
       output += "</p></intro>"
-    for p in node['sub-sections']:
-      output += generate_sub_section(p, prefix)
+    if 'sub-sections' in node and node['sub-sections'] != '':
+      for p in node['sub-sections']:
+        output += generate_sub_section(p, prefix)
+    elif node['paragraphs'] != '':
+      for p in node['paragraphs']:
+        output += generate_paragraph(p, prefix)
+    if node['section post'] != '':
+      output += "<wrapup><p>"
+      output += node['section post']
+      output += "</p></wrapup>"
   else:
-    if 'section text' in node:
+    if node['section text'] != '':
       output += "<content><p>"
       output += node['section text']
       output += "</p></content>"
@@ -186,6 +206,7 @@ def generate_act(node):
   return output
 
 def generate_akn(text):
+  # Ideally, we would strip blank lines off the end of the indented file.
   return generate_act(act.parseString(addExplicitIndents(text)))
 
 import sys

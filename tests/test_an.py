@@ -6,9 +6,27 @@ def test_readme_demo():
     file.close()
     parse_result = act.parseString(addExplicitIndents(text),parse_all=True)
     an = generate_act(parse_result)
-    assert an == """<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Rock Paper Scissors Act</shortTitle></p></preface><body><section eId="sec_1"><num>1</num><heading>Players</heading><content><p>A game of rock paper scissors has two players.</p></content></section><section eId="sec_2"><num>2</num><intro><p>There are three signs:</p></intro><subSection eId="sec_2__subsec_1"><num>1</num><content><p>Rock,</p></content></subSection><subSection eId="sec_2__subsec_2"><num>2</num><content><p>Paper, and</p></content></subSection><subSection eId="sec_2__subsec_3"><num>3</num><content><p>Scissors.</p></content></subSection></section><section eId="sec_3"><num>3</num><heading>Defeating Relationships</heading><subSection eId="sec_3__subsec_1"><num>1</num><content><p>Rock beats Scissors,</p></content></subSection><subSection eId="sec_3__subsec_2"><num>2</num><content><p>Scissors beats Paper, and</p></content></subSection><subSection eId="sec_3__subsec_3"><num>3</num><content><p>Paper beats Rock.</p></content></subSection></section><section eId="sec_4"><num>4</num><heading>Winner</heading><content><p>The winner of a game is the player who throws a sign that beats the sign of the other player.</p></content></section></body></act></akomaNtoso>"""
+    print(an)
+    assert an == """<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Rock Paper Scissors Act</shortTitle></p></preface><body><section eId="sec_1"><num>1</num><heading>Players</heading><content><p>A game of rock paper scissors has two players.</p></content></section><section eId="sec_2"><num>2</num><intro><p>There are three signs:</p></intro><paragraph eId="sec_2__para_a"><num>a</num><content><p>Rock,</p></content></paragraph><paragraph eId="sec_2__para_b"><num>b</num><content><p>Paper, and</p></content></paragraph><paragraph eId="sec_2__para_c"><num>c</num><content><p>Scissors.</p></content></paragraph></section><section eId="sec_3"><num>3</num><heading>Defeating Relationships</heading><subSection eId="sec_3__subsec_1"><num>1</num><content><p>Rock beats Scissors,</p></content></subSection><subSection eId="sec_3__subsec_2"><num>2</num><content><p>Scissors beats Paper, and</p></content></subSection><subSection eId="sec_3__subsec_3"><num>3</num><content><p>Paper beats Rock.</p></content></subSection></section><section eId="sec_4"><num>4</num><heading>Winner</heading><content><p>The winner of a game is the player who throws a sign that beats the sign of the other player.</p></content></section></body></act></akomaNtoso>"""
+
+def test_trailing_blanks():
+    text = """Act Title
+
+Heading
+1. Section text.
+
+"""
+    parse = act.parseString(text,parse_all=True)
+    assert parse
 
 
+def test_insert_indexes():
+    text = """Act
+    
+    1.1. First section."""
+    parse = act.parseString(text)
+    an = generate_act(parse)
+    assert an == """<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Act</shortTitle></p></preface><body><section eId="sec_1_1"><num>1.1</num><content><p>First section.</p></content></section></body></act></akomaNtoso>"""
 # # print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n", parse_all=True)))
 # print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n", parse_all=True)))
 # print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n  (i) with a sub-paragraph,\n  (ii) and another sub-paragraph.\n", parse_all=True)))

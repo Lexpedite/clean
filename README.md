@@ -177,9 +177,6 @@ a sign that beats the sign of the other player.
 
 ## Known Issues
 Some things to be aware of if you are playing with it:
-* the generated akoma ntoso is not yet using all
-  of the information in the .clean file.
-* strings with blank lines at the end may not parse correctly.
 * there is no validation of roman numerals. If it uses `i`, `v`, `x`, etc., it
   will be accepted
 

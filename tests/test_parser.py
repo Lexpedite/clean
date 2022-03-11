@@ -58,9 +58,9 @@ class TestSubParagraph:
         assert sub_paragraph_index.parseString(good_subparagraph_index,parse_all=True)
 
     @pytest.mark.parametrize("bad_subparagraph_index",[
-        "(b)", #Must be roman numerals
-        "(M)", # must be lower-case
-        "(iivivi)", # must be well-formed roman numeral
+        "\n(b)", #Must be roman numerals
+        "\n(M)", # must be lower-case
+        "\n(iivivi)", # must be well-formed roman numeral
     ])
     def test_parse_bad_subpara_index(self, bad_subparagraph_index):
         with pytest.raises(ParseException):
@@ -87,9 +87,7 @@ class TestSubParagraph:
         dictionary = parse.asDict()
         assert dictionary == \
             {
-                'sub-paragraph index': [{
-                    'sub-paragraph number': "i"
-                }],
+                'sub-paragraph index': ["i"],
                 'sub-paragraph text': "Sub-paragraph here"
             }
 
@@ -105,18 +103,23 @@ class TestSubParagraph:
         assert len(parse) == 2
         assert parse[0].asDict() == \
                 {
-                    'sub-paragraph index': [{
-                        'sub-paragraph number': "i"
-                    }],
+                    'sub-paragraph index': ["i"],
                     'sub-paragraph text': "subparagraph one"
                 }
         assert parse[1].asDict() == \
                 {
-                    'sub-paragraph index': [{
-                        'sub-paragraph number': "ii"
-                    }],
+                    'sub-paragraph index': ["ii"],
                     'sub-paragraph text': "subparagraph two"
                 }
+    
+    def test_subpara_index_insert_structure(self):
+        text = "\n(i.1) Test"
+        parse = sub_paragraph.parseString(text,parse_all=True)
+        dictionary = parse.asDict()
+        assert dictionary == {
+            'sub-paragraph index': ['i.1'],
+            'sub-paragraph text': "Test"
+        }
 
 class TestParagraph:
     @pytest.mark.parametrize("good_paragraph_index",[
@@ -142,7 +145,7 @@ class TestParagraph:
             assert paragraph_index.parseString(bad_paragraph_index,parse_all=True)
 
     def test_parse_paragraph_index_structure(self):
-        assert paragraph_index.parseString("\n(a)",parse_all=True)['paragraph number'] == "a"
+        assert paragraph_index.parseString("\n(a)",parse_all=True).asList() == ['a']
 
     def test_parse_paragraph(self):
         assert paragraph.parseString("\n(a) This is paragraph.\n",parse_all=True)
@@ -311,6 +314,31 @@ INDENT
 UNDENT"""
         parse = section.parseString(text,parse_all=True)
         assert parse
+
+    def test_blank_lines_prevent_sandwich(self):
+        text = """
+1. This is start
+INDENT
+  (1) this is sub
+UNDENT
+
+this is not sandwich"""
+        parse = section.parseString(text)
+        dictionary = parse.asDict()
+        assert dictionary['section post'] ==''
+
+    def test_blank_links_interrupt_sandwich(self):
+        text = """
+1. This is start
+INDENT
+  (1) this is sub
+UNDENT
+target sandwich
+
+this is not sandwich"""
+        parse = section.parseString(text)
+        dictionary = parse.asDict()
+        assert dictionary['section post'] == "target sandwich"
 
 class TestHeading:
     def test_parse_heading(self):
