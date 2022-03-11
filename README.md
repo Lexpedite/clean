@@ -22,10 +22,11 @@ from clean import generate_akn
 
 text = """Title
 
-1. Section one.
-"""
+1. Section one."""
 
 print(generate_akn(text))
+
+# <?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Title</shortTitle></p></preface><body><section eId="sec_1"><num>1</num><content><p>Section one.</p></content></section></body></act></akomaNtoso>
 ```
 
 ## Format
