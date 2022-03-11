@@ -1,7 +1,5 @@
-from sysconfig import parse_config_h
 import pytest
 from ..clean import *
-from pyparsing import ParseResults
 
 class TestIndents:
 
