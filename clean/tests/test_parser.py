@@ -396,5 +396,16 @@ INDENT
     extends across more than one line.
 UNDENT""",parse_all=True)
 
+class TestSpan:
+    def test_span_name(self):
+        assert span_name.parseString("[text]",parse_all=True)
 
+    def test_span(self):
+        assert span.parseString("[text]{this is some legal text}",parse_all=True)
+    
+    def test_nested_spans(self):
+        assert False
+
+    def nested_spans_in_para(self):
+        assert False
 
