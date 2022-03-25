@@ -398,14 +398,33 @@ UNDENT""",parse_all=True)
 
 class TestSpan:
     def test_span_name(self):
-        assert span_name.parseString("[text]",parse_all=True)
+        string = "[text]"
+        parse = span_name.parseString(string,parse_all=True)
+        dictionary = parse.asDict()
+        assert dictionary['span name'] == 'text'
 
     def test_span(self):
-        assert span.parseString("[text]{this is some legal text}",parse_all=True)
+        parse = span.parseString("[text]{this is some legal text}",parse_all=True)
+        dictionary = parse.asDict()
+        assert dictionary['span name'] == "text" and dictionary['span'] == "this is some legal text"
     
     def test_nested_spans(self):
+        parse = span.parseString("[text]{outer span has [inner]{another span} in it}", parse_all=True)
+        output = parse.asList() 
+        #TODO I'm not even sure what this should be producing, yet.
         assert False
 
-    def nested_spans_in_para(self):
-        assert False
+    def test_nested_spans_in_para(self):
+        assert legal_text.parseString("""1. This is a test
+of a paragraph with [span1]{ nested
+spans [inner]{inside} it} including
+across lines.""",parse_all=True)
 
+    def test_nested_spans_in_para_structure(self):
+        string = """1. This is a test
+of a paragraph with [span1]{ nested
+spans [inner]{inside} it} including
+across lines."""
+        parse = legal_text.parseString(string,parse_all=True)
+        dictionary = parse.asDict()
+        assert False

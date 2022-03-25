@@ -59,9 +59,10 @@ paragraph = Forward()
 sub_section = Forward()
 section = Forward()
 numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP ^ BLANK_LINE
-legal_text = Combine(ZeroOrMore(NL ^ Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")
-span_name = SPANNAME_START + Word(printables,exclude_chars="[]\{\}") + SPANNAME_STOP
-span = span_name + SPAN_START + Combine(ZeroOrMore(NL ^ Word(printables,exclude_chars="\}"), stop_on=numbered_part), adjacent=False, join_string=" ") + SPAN_STOP
+span_name = SPANNAME_START + Word(printables,exclude_chars="[]\{\}")('span name') + SPANNAME_STOP
+span = Forward()
+span <<= span_name + SPAN_START + Combine(ZeroOrMore(span ^ NL ^ Word(printables,exclude_chars="\}"), stop_on=numbered_part), adjacent=False, join_string=" ")('span') + SPAN_STOP
+legal_text = Combine(ZeroOrMore( span ^ NL ^ Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")
 heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
 title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL
 sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + legal_text('sub-paragraph text')
