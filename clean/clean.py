@@ -85,7 +85,7 @@ sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub
     )
 sub_section_list = OneOrMore(Group(sub_section))
 empty_section = Optional(heading)('section header') + \
-    section_index('section index') + \
+    section_index('section index') + NL + \
     Suppress(UP) + \
     sub_section_list('sub-sections') + \
     Suppress(DOWN)

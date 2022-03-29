@@ -1,6 +1,23 @@
 import pytest
 from ..clean import addExplicitIndents
 
+def test_hanging_indents():
+    text = """Title
+1. Section
+  (1) Subsection
+    (a) Paragraph"""
+    indents = addExplicitIndents(text)
+    assert indents == """Title
+1. Section
+INDENT
+  (1) Subsection
+INDENT
+    (a) Paragraph
+UNDENT
+UNDENT
+"""
+
+
 def test_indents():
     text = """Rock Paper Scissors Act
 
