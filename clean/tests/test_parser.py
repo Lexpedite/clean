@@ -102,12 +102,12 @@ class TestSubParagraph:
         assert parse[0].asDict() == \
                 {
                     'sub-paragraph index': ["i"],
-                    'sub-paragraph text': "subparagraph one"
+                    'sub-paragraph text': ["subparagraph one"]
                 }
         assert parse[1].asDict() == \
                 {
                     'sub-paragraph index': ["ii"],
-                    'sub-paragraph text': "subparagraph two"
+                    'sub-paragraph text': ["subparagraph two"]
                 }
     
     def test_subpara_index_insert_structure(self):
@@ -116,7 +116,7 @@ class TestSubParagraph:
         dictionary = parse.asDict()
         assert dictionary == {
             'sub-paragraph index': ['i.1'],
-            'sub-paragraph text': "Test"
+            'sub-paragraph text': ["Test"]
         }
 
 class TestParagraph:
@@ -403,34 +403,39 @@ class TestSpan:
     def test_span_name(self):
         string = "[text]"
         parse = span_name.parseString(string,parse_all=True)
-        dictionary = parse.asDict()
-        assert dictionary['span name'] == 'text'
+        dictionary = parse.asList()
+        assert dictionary == ['text']
 
     def test_span(self):
         parse = span.parseString("[text]{this is some legal text}",parse_all=True)
         dictionary = parse.asDict()
-        assert dictionary['span name'] == "text" and dictionary['span'] == "this is some legal text"
+        assert dictionary['span name'] == ["text"] and dictionary['span body'] == ['this is some legal text']
     
     def test_nested_spans(self):
         parse = span.parseString("[text]{outer span has [inner]{another span} in it}", parse_all=True)
-        output = parse.asList() 
-        #TODO I'm not even sure what this should be producing, yet.
-        assert False
+        output = parse.asList()
+        assert output == [['text'], ['outer span has', [['inner'], ['another span']], 'in it']]
 
     def test_nested_spans_in_para(self):
-        assert legal_text.parseString("""1. This is a test
+        parse = legal_text.parseString("""This is a test
 of a paragraph with [span1]{ nested
 spans [inner]{inside} it} including
 across lines.""",parse_all=True)
-
-    def test_nested_spans_in_para_structure(self):
-        string = """1. This is a test
-of a paragraph with [span1]{ nested
-spans [inner]{inside} it} including
-across lines."""
-        parse = legal_text.parseString(string,parse_all=True)
-        dictionary = parse.asDict()
-        assert False
+        assert parse.as_list() == [
+            'This is a test of a paragraph with',
+            [
+                ['span1'],
+                [
+                    'nested spans', 
+                    [
+                        ['inner'], 
+                        ['inside']
+                    ],
+                     'it'
+                ]
+            ],
+            'including across lines.'
+        ]
 
 class TestR34:
     def test_long_example(self):
