@@ -5,7 +5,8 @@ def test_hanging_indents():
     text = """Title
 1. Section
   (1) Subsection
-    (a) Paragraph"""
+    (a) Paragraph
+"""
     indents = addExplicitIndents(text)
     assert indents == """Title
 1. Section

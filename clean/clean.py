@@ -88,7 +88,7 @@ empty_section = Optional(heading)('section header') + \
     section_index('section index') + NL + \
     Suppress(UP) + \
     sub_section_list('sub-sections') + \
-    Suppress(DOWN)
+    Suppress(DOWN) + Optional(NL)
 full_section = Optional(heading)('section header') + \
     section_index('section index') + \
     legal_text('section text') + \
@@ -96,7 +96,7 @@ full_section = Optional(heading)('section header') + \
     (Suppress(UP) + \
     (sub_section_list('sub-sections') ^ paragraph_list('paragraphs')) + \
     Suppress(DOWN)) + \
-    Optional(legal_text('section post'))
+    Optional(legal_text('section post') ^ NL)
     )
 section <<= full_section ^ empty_section
 # Only for sections, the initial text is optional. if it is missing,
@@ -255,4 +255,6 @@ def addExplicitIndents(string):
   while len(levels) > 1:
     output += DOWN
     levels.pop()
+  if output.splitlines()[-1] == "\n" and output.splitlines()[-2] == "UNDENT":
+    output.pop()
   return output

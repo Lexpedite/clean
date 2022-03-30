@@ -435,7 +435,7 @@ across lines."""
 class TestR34:
     def test_long_example(self):
         with open('clean/tests/r34.clean','r') as file:
-            parse = act.parseString(file.read(),parse_all=False)
+            parse = act.parseString(addExplicitIndents(file.read()),parse_all=True)
             assert parse
     
     def test_section(self):
@@ -445,11 +445,11 @@ Executive appointments
   (1) A legal practitioner must not accept any executive appointment associated with any of the following businesses:
     (a) any business which detracts from, is incompatible with, or derogates from the dignity of, the legal profession;
     (b) any business which materially interferes with -
-      (i) the legal practitioner’s primary occupation of practising as a lawyer;
-      (ii) the legal practitioner’s availability to those who may seek the legal practitioner’s services as a lawyer; or
-      (iii) the representation of the legal practitioner’s clients;
+      (i) the legal practitioner's primary occupation of practising as a lawyer;
+      (ii) the legal practitioner's availability to those who may seek the legal practitioner's services as a lawyer; or
+      (iii) the representation of the legal practitioner's clients;
     (c) any business which is likely to unfairly attract business in the practice of law;
-    (d) any business which involves the sharing of the legal practitioner’s fees with, or the payment of a commission to, any unauthorised person for legal work performed by the legal practitioner;
+    (d) any business which involves the sharing of the legal practitioner's fees with, or the payment of a commission to, any unauthorised person for legal work performed by the legal practitioner;
     (e) any business set out in the First Schedule;
     (f) any business which is prohibited by -
       (i) the Act;
@@ -478,7 +478,7 @@ Executive appointments
     (b) "business entity)  -
       (i) includes any company, corporation, partnership, limited liability partnership, sole proprietorship, business trust or other entity that carries on any business; but
       (ii) excludes any Singapore law practice, any Joint Law Venture, any Formal Law Alliance, any foreign law practice and any institution set out in the Third Schedule;
-    (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non‑executive director or independent director associated with the business or in the business entity;
+    (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non-executive director or independent director associated with the business or in the business entity;
     (d) "law-related service" means any service set out in the Fourth Schedule, being a service that may reasonably be performed in conjunction with, and that is in substance related to, the provision of any legal service.""")
         assert section.parseString(text,parse_all=True)
 
@@ -489,11 +489,11 @@ Executive appointments
   (1) A legal practitioner must not accept any executive appointment associated with any of the following businesses:
     (a) any business which detracts from, is incompatible with, or derogates from the dignity of, the legal profession;
     (b) any business which materially interferes with -
-      (i) the legal practitioner’s primary occupation of practising as a lawyer;
-      (ii) the legal practitioner’s availability to those who may seek the legal practitioner’s services as a lawyer; or
-      (iii) the representation of the legal practitioner’s clients;
+      (i) the legal practitioner's primary occupation of practising as a lawyer;
+      (ii) the legal practitioner's availability to those who may seek the legal practitioner's services as a lawyer; or
+      (iii) the representation of the legal practitioner's clients;
     (c) any business which is likely to unfairly attract business in the practice of law;
-    (d) any business which involves the sharing of the legal practitioner’s fees with, or the payment of a commission to, any unauthorised person for legal work performed by the legal practitioner;
+    (d) any business which involves the sharing of the legal practitioner's fees with, or the payment of a commission to, any unauthorised person for legal work performed by the legal practitioner;
     (e) any business set out in the First Schedule;
     (f) any business which is prohibited by -
       (i) the Act;
@@ -522,7 +522,7 @@ Executive appointments
     (b) "business entity"  -
       (i) includes any company, corporation, partnership, limited liability partnership, sole proprietorship, business trust or other entity that carries on any business; but
       (ii) excludes any Singapore law practice, any Joint Law Venture, any Formal Law Alliance, any foreign law practice and any institution set out in the Third Schedule;
-    (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non‑executive director or independent director associated with the business or in the business entity;
+    (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non-executive director or independent director associated with the business or in the business entity;
     (d) "law-related service" means any service set out in the Fourth Schedule, being a service that may reasonably be performed in conjunction with, and that is in substance related to, the provision of any legal service.""")
         assert empty_section.parseString(text,parse_all=True)
 
@@ -531,11 +531,11 @@ Executive appointments
 (1) A legal practitioner must not accept any executive appointment associated with any of the following businesses:
   (a) any business which detracts from, is incompatible with, or derogates from the dignity of, the legal profession;
   (b) any business which materially interferes with -
-    (i) the legal practitioner’s primary occupation of practising as a lawyer;
-    (ii) the legal practitioner’s availability to those who may seek the legal practitioner’s services as a lawyer; or
-    (iii) the representation of the legal practitioner’s clients;
+    (i) the legal practitioner's primary occupation of practising as a lawyer;
+    (ii) the legal practitioner's availability to those who may seek the legal practitioner's services as a lawyer; or
+    (iii) the representation of the legal practitioner's clients;
   (c) any business which is likely to unfairly attract business in the practice of law;
-  (d) any business which involves the sharing of the legal practitioner’s fees with, or the payment of a commission to, any unauthorised person for legal work performed by the legal practitioner;
+  (d) any business which involves the sharing of the legal practitioner's fees with, or the payment of a commission to, any unauthorised person for legal work performed by the legal practitioner;
   (e) any business set out in the First Schedule;
   (f) any business which is prohibited by -
     (i) the Act;
@@ -564,9 +564,26 @@ Executive appointments
   (b) "business entity"  -
     (i) includes any company, corporation, partnership, limited liability partnership, sole proprietorship, business trust or other entity that carries on any business; but
     (ii) excludes any Singapore law practice, any Joint Law Venture, any Formal Law Alliance, any foreign law practice and any institution set out in the Third Schedule;
-  (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non‑executive director or independent director associated with the business or in the business entity;
+  (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non-executive director or independent director associated with the business or in the business entity;
   (d) "law-related service" means any service set out in the Fourth Schedule, being a service that may reasonably be performed in conjunction with, and that is in substance related to, the provision of any legal service.""")
         assert sub_section_list.parseString(text,parse_all=True)
+
+    def test_sub_section_list2(self):
+        text = addExplicitIndents("""
+(i) the legal practitioner's primary occupation of practising as a lawyer;
+(ii) the legal practitioner's availability to those who may seek the legal practitioner's services as a lawyer; or
+(iii) the representation of the legal practitioner's clients;
+""")
+        parse = sub_paragraph_list.parseString(text,parse_all=True)
+        assert parse
+
+    def test_sub_section2(self):
+        text = addExplicitIndents("""
+(8) To avoid doubt, this rule does not authorise the formation of, or regulate -
+  (a) any related practice referred to in paragraph (2); or
+  (b) any business entity referred to in paragraph (3), (4) or (5).""")
+        assert sub_section.parseString(text,parse_all=True)
+
 
     def test_sub_section(self):
         text = addExplicitIndents("""
@@ -575,7 +592,7 @@ Executive appointments
   (b) "business entity"  -
     (i) includes any company, corporation, partnership, limited liability partnership, sole proprietorship, business trust or other entity that carries on any business; but
     (ii) excludes any Singapore law practice, any Joint Law Venture, any Formal Law Alliance, any foreign law practice and any institution set out in the Third Schedule;
-  (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non‑executive director or independent director associated with the business or in the business entity;
+  (c) "executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non-executive director or independent director associated with the business or in the business entity;
   (d) "law-related service" means any service set out in the Fourth Schedule, being a service that may reasonably be performed in conjunction with, and that is in substance related to, the provision of any legal service.
 """)
         parse = sub_section.parseString(text,parse_all=False) 
