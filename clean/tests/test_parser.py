@@ -503,3 +503,7 @@ class TestR34:
         with open('clean/tests/r34span.clean','r') as file:
             parse = act.parseString(addExplicitIndents(file.read()),parse_all=True)
             assert parse
+
+    def test_long_example_with_spans_structure(self):
+        # Spans are not being parsed inside legal_text in the demo file
+        assert False
