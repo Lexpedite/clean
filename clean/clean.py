@@ -11,11 +11,10 @@ ParserElement.setDefaultWhitespaceChars(' \t')
 OPEN = "("
 CLOSE = ")"
 DOT = "."
-SOL = line_start
 NL = Suppress(Literal('\n'))
-BLANK_LINE = SOL + NL
-UP = SOL + Literal("INDENT")
-DOWN = SOL + Literal("UNDENT")
+BLANK_LINE = line_start + NL
+UP = NL + "INDENT"
+DOWN = NL + "UNDENT"
 SPANNAME_START = Suppress("[")
 SPANNAME_STOP = Suppress("]")
 SPAN_START = Suppress("{")
@@ -61,11 +60,25 @@ section = Forward()
 numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP ^ BLANK_LINE
 span_name = SPANNAME_START + Word(alphanums) + SPANNAME_STOP
 span = Forward()
-span <<= Group(span_name)('span name') + SPAN_START + Group(ZeroOrMore(Group(span) ^ Combine(OneOrMore(NL ^ Word(alphanums)),join_string=" ",adjacent=False)))('span body') + SPAN_STOP
+span <<= Group(span_name)('span name') + SPAN_START + Group(ZeroOrMore(Group(span) ^ Combine(OneOrMore((Opt(NL) + Word(alphanums))),join_string=" ",adjacent=False)))('span body') + SPAN_STOP
 # legal_text = Combine(ZeroOrMore( span ^ NL ^ Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")
-legal_text = ZeroOrMore( Group(span) ^ Combine(OneOrMore(Word(printables) ^ NL ,stop_on=span), adjacent=False, join_string=" "), stop_on=numbered_part)
-heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
-title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL
+legal_text = \
+  ZeroOrMore( \
+    Group(span) \
+    ^ \
+    Combine(\
+      OneOrMore(\
+        (Opt(NL) + Word(printables)),
+        stop_on=span ^ numbered_part\
+      ), 
+      adjacent=False, 
+      join_string=" "\
+    ),
+    stop_on=numbered_part\
+  )
+# legal_text.set_whitespace_chars(' \t')
+heading = NL + NL + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
+title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text')
 sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + legal_text('sub-paragraph text')
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
 paragraph <<= \
@@ -86,10 +99,10 @@ sub_section <<= Optional(heading)('sub-section header') + sub_section_index('sub
     )
 sub_section_list = OneOrMore(Group(sub_section))
 empty_section = Optional(heading)('section header') + \
-    section_index('section index') + NL + \
+    section_index('section index') + \
     Suppress(UP) + \
     sub_section_list('sub-sections') + \
-    Suppress(DOWN) + Optional(NL)
+    Suppress(DOWN)
 full_section = Optional(heading)('section header') + \
     section_index('section index') + \
     legal_text('section text') + \
@@ -97,7 +110,7 @@ full_section = Optional(heading)('section header') + \
     (Suppress(UP) + \
     (sub_section_list('sub-sections') ^ paragraph_list('paragraphs')) + \
     Suppress(DOWN)) + \
-    Optional(legal_text('section post') ^ NL)
+    Optional(legal_text('section post'))
     )
 section <<= full_section ^ empty_section
 # Only for sections, the initial text is optional. if it is missing,
@@ -238,17 +251,17 @@ def addExplicitIndents(string):
   for line in string.splitlines():
     level = len(line) - len(line.lstrip(' '))
     if level == levels[-1]: # The level has not changed
-      output += line + '\n'
+      output += line.lstrip(' ') + '\n'
     elif level > levels[-1]: # The indent has increased
       levels.append(level)
       output += UP
-      output += line + '\n'
+      output += line.lstrip(' ') + '\n'
     elif level < levels[-1]: # The indent has gone down
       if level in levels: #We are returning to a previous level
         while level != levels[-1]:
           output += DOWN
           levels.pop()
-        output += line + '\n'
+        output += line.lstrip(' ') + '\n'
       else:
         raise Exception("Unindent to a level not previously used in " + line)
   # At this point, it is possible that we have a high indentation level,
@@ -256,6 +269,6 @@ def addExplicitIndents(string):
   while len(levels) > 1:
     output += DOWN
     levels.pop()
-  if output.splitlines()[-1] == "\n" and output.splitlines()[-2] == "UNDENT":
+  while output.splitlines()[-1] == "\n":
     output.pop()
   return output
