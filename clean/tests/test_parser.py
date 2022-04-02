@@ -405,7 +405,8 @@ class TestHeading:
 
 class TestTitle:
     def test_parse_title(self):
-        assert title.parseString("Rock Paper Scissors Act",parse_all=True)
+        parse = title.parseString("Rock Paper Scissors Act",parse_all=False) 
+        assert parse.as_list() == ['Rock Paper Scissors Act']
 
 class TestAct:
     def test_parse_act(self):
@@ -416,6 +417,13 @@ Heading
 INDENT
 (1) sub-section text.
 UNDENT""",parse_all=True)
+
+    def test_one_index(self):
+        text = """Act
+
+1.1. First section."""
+        parse = act.parse_string(text,parse_all=True)
+        assert len(parse['body']) == 1
 
     def test_parse_act_complex(self):
         assert act.parseString("""Rock Paper Scissors Act
@@ -467,6 +475,10 @@ class TestSpan:
         dictionary = parse.asDict()
         assert dictionary['span name'] == ["text"] and dictionary['span body'] == ['this is some legal text']
     
+    def test_span_can_have_internal_quotations(self):
+        parse = span.parseString("[name]{this is text's possessive}",parse_all=True)
+        assert parse
+
     def test_nested_spans(self):
         parse = span.parseString("[text]{outer span has [inner]{another span} in it}", parse_all=True)
         output = parse.asList()
@@ -505,5 +517,6 @@ class TestR34:
             assert parse
 
     def test_long_example_with_spans_structure(self):
-        # Spans are not being parsed inside legal_text in the demo file
-        assert False
+        with open('clean/tests/r34span.clean','r') as file:
+            parse = act.parseString(addExplicitIndents(file.read()),parse_all=True)
+            assert parse['body'][0]['sub-sections'][0]['paragraphs'][3].as_list() == ['d', 'any business which involves', [['fees'], ["the sharing of the legal practitioner's fees with"]], ', or', [['commission'], ['the payment of a commission to']], ', any unauthorised person for legal work performed by the legal practitioner;']
