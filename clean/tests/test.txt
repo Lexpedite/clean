@@ -1,5 +1,0 @@
-Rock Paper Scissors Act
-
-Heading
-1. This is the text of the RPS Act,
-  (1) sub-section text.

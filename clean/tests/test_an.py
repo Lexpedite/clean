@@ -1,13 +1,13 @@
 from ..clean import *
 
 def test_readme_demo():
-    file = open('tests/rps.clean')
+    file = open('clean/tests/rps.clean')
     text = file.read()
     file.close()
     parse_result = act.parseString(addExplicitIndents(text),parse_all=True)
     an = generate_act(parse_result)
-    print(an)
     assert an == """<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Rock Paper Scissors Act</shortTitle></p></preface><body><section eId="sec_1"><num>1</num><heading>Players</heading><content><p>A game of rock paper scissors has two players.</p></content></section><section eId="sec_2"><num>2</num><intro><p>There are three signs:</p></intro><paragraph eId="sec_2__para_a"><num>a</num><content><p>Rock,</p></content></paragraph><paragraph eId="sec_2__para_b"><num>b</num><content><p>Paper, and</p></content></paragraph><paragraph eId="sec_2__para_c"><num>c</num><content><p>Scissors.</p></content></paragraph></section><section eId="sec_3"><num>3</num><heading>Defeating Relationships</heading><subSection eId="sec_3__subsec_1"><num>1</num><content><p>Rock beats Scissors,</p></content></subSection><subSection eId="sec_3__subsec_2"><num>2</num><content><p>Scissors beats Paper, and</p></content></subSection><subSection eId="sec_3__subsec_3"><num>3</num><content><p>Paper beats Rock.</p></content></subSection></section><section eId="sec_4"><num>4</num><heading>Winner</heading><content><p>The winner of a game is the player who throws a sign that beats the sign of the other player.</p></content></section></body></act></akomaNtoso>"""
+
 
 def test_trailing_blanks():
     text = """Act Title
@@ -23,41 +23,33 @@ Heading
 def test_insert_indexes():
     text = """Act
     
-    1.1. First section."""
+1.1. First section."""
     parse = act.parseString(text)
     an = generate_act(parse)
     assert an == """<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Act</shortTitle></p></preface><body><section eId="sec_1_1"><num>1.1</num><content><p>First section.</p></content></section></body></act></akomaNtoso>"""
-# # print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n", parse_all=True)))
-# print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n", parse_all=True)))
-# print(generate_paragraph(paragraph.parseString("(a) This is a paragraph\n  (i) with a sub-paragraph,\n  (ii) and another sub-paragraph.\n", parse_all=True)))
 
-# print(generate_sub_section(sub_section.parseString("""(1) this is a subsection, with
-#   (a) this as a paragraph, and
-#     (i) with a subparagraph, and
-#     (ii) another subparagraph, followed by
-#   (b) another paragraph.
-# """, parse_all=True)))
+def test_gen_legal_text():
+    text = """This is legal text
+spread over two lines."""
+    parse = legal_text.parse_string(text,parse_all=True)
+    an = generate_legal_text(parse)
+    assert an == "This is legal text spread over two lines."
 
-# print(generate_section(section.parseString("""1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
-#     (2) and another subsection.
-# """, parse_all=True)))
-
-# print(generate_section(section.parseString("""
-# Heading for Section
-# 1. This is the start of the section text.
-#     (1) The section also has sub-sections
-#         (a) with paragraphs.
-#             (i) Which have sub-paragraphs
-#         (b) and another paragraph,
-#     (2) and another subsection.
-# """, parse_all=True)))
-
-# print(generate_act(act.parseString("""Rock Paper Scissors Act
+def test_gen_legal_text_with_span():
+    text = """This is legal text
+spread [over]{two lines}."""
+    parse = legal_text.parse_string(text,parse_all=True)
+    an = generate_legal_text(parse)
+    assert an == 'This is legal text spread <span eId="over">two lines</span> .'
     
-# 1. This is the text of the RPS Act,
-#   (1) sub-section text.
-# """, parse_all=True)))
+def test_gen_legal_text_with_nested_span():
+    text = "This is outside [one]{inside one [two]{inside two} one} none."
+    parse = legal_text.parse_string(text,parse_all=True)
+    an = generate_legal_text(parse)
+    assert an == 'This is outside <span eId="one">inside one <span eId="one.two">inside two</span> one</span> none.'
+
+def tests_r34_span():
+    with open('clean/tests/r34span.clean','r') as file:
+        parse = act.parse_string(addExplicitIndents(file.read()),parse_all=True)
+        an = generate_act(parse)
+        assert an == '<?xml version="1.0" encoding="UTF-8"?><akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0"><act><preface><p class="title"><shortTitle>Legal Profession (Professional Conduct) Rules 2015</shortTitle></p></preface><body><section eId="sec_34"><num>34</num><heading>Executive appointments</heading><subSection eId="sec_34__subsec_1"><num>1</num><intro><p>A legal practitioner must not accept any executive appointment associated with any of the following businesses:</p></intro><paragraph eId="sec_34__subsec_1__para_a"><num>a</num><content><p>any business which detracts from, is incompatible with, or derogates from the dignity of, the legal profession;</p></content></paragraph><paragraph eId="sec_34__subsec_1__para_b"><num>b</num><intro><p>any business which materially interferes with -</p></intro><subParagraph eId="sec_34__subsec_1__para_b__subpara_i"><num>i</num><content><p>the legal practitioner\'s primary occupation of practising as a lawyer;</p></content></subParagraph><subParagraph eId="sec_34__subsec_1__para_b__subpara_ii"><num>ii</num><content><p>the legal practitioner\'s availability to those who may seek the legal practitioner\'s services as a lawyer; or</p></content></subParagraph><subParagraph eId="sec_34__subsec_1__para_b__subpara_iii"><num>iii</num><content><p>the representation of the legal practitioner\'s clients;</p></content></subParagraph></paragraph><paragraph eId="sec_34__subsec_1__para_c"><num>c</num><content><p>any business which is likely to unfairly attract business in the practice of law;</p></content></paragraph><paragraph eId="sec_34__subsec_1__para_d"><num>d</num><content><p>any business which involves <span eId="sec_34__subsec_1__para_d.fees">the sharing of the legal practitioner\'s fees with</span> , or <span eId="sec_34__subsec_1__para_d.commission">the payment of a commission to</span> , any unauthorised person for legal work performed by the legal practitioner;</p></content></paragraph><paragraph eId="sec_34__subsec_1__para_e"><num>e</num><content><p>any business set out in the First Schedule;</p></content></paragraph><paragraph eId="sec_34__subsec_1__para_f"><num>f</num><intro><p>any business which is prohibited by -</p></intro><subParagraph eId="sec_34__subsec_1__para_f__subpara_i"><num>i</num><content><p>the Act;</p></content></subParagraph><subParagraph eId="sec_34__subsec_1__para_f__subpara_ii"><num>ii</num><content><p>these Rules or any other subsidiary legislation made under the Act;</p></content></subParagraph><subParagraph eId="sec_34__subsec_1__para_f__subpara_iii"><num>iii</num><content><p>any practice directions, guidance notes and rulings issued under section 71(6) of the Act; or</p></content></subParagraph><subParagraph eId="sec_34__subsec_1__para_f__subpara_iv"><num>iv</num><content><p>any practice directions, guidance notes and rulings (relating to professional practice, etiquette, conduct and discipline) issued by the Council or the Society.</p></content></subParagraph></paragraph></subSection><subSection eId="sec_34__subsec_2"><num>2</num><intro><p>Subject to paragraph (1), a legal practitioner in a Singapore law practice (called in this paragraph the main practice) may accept an executive appointment in another Singapore law practice (called in this paragraph the related practice), if the related practice is connected to the main practice in either of the following ways:</p></intro><paragraph eId="sec_34__subsec_2__para_a"><num>a</num><content><p>every legal or beneficial owner of the related practice is the sole proprietor, or a partner or director, of the main practice;</p></content></paragraph><paragraph eId="sec_34__subsec_2__para_b"><num>b</num><intro><p>the legal practitioner accepts the executive appointment [representative]{as a representative of the main practice in the related practice}, and the involvement of the main practice in the related practice is not prohibited by any of the following:</p></intro><subParagraph eId="sec_34__subsec_2__para_b__subpara_i"><num>i</num><content><p>the Act;</p></content></subParagraph><subParagraph eId="sec_34__subsec_2__para_b__subpara_ii"><num>ii</num><content><p>these Rules or any other subsidiary legislation made under the Act;</p></content></subParagraph><subParagraph eId="sec_34__subsec_2__para_b__subpara_iii"><num>iii</num><content><p>any practice directions, guidance notes and rulings issued under section 71(6) of the Act;</p></content></subParagraph><subParagraph eId="sec_34__subsec_2__para_b__subpara_iv"><num>iv</num><content><p>any practice directions, guidance notes and rulings (relating to professional practice, etiquette, conduct and discipline) issued by the Council or the Society.</p></content></subParagraph></paragraph></subSection><subSection eId="sec_34__subsec_3"><num>3</num><content><p>Subject to paragraph (1), a legal practitioner may accept an executive appointment in a business entity which provides law-related services.</p></content></subSection><subSection eId="sec_34__subsec_4"><num>4</num><content><p>Subject to paragraph (1), a legal practitioner (not being a locum solicitor) may accept an executive appointment in a business entity which does not provide any legal services or law-related services, if all of the conditions set out in the Second Schedule are satisfied.</p></content></subSection><subSection eId="sec_34__subsec_5"><num>5</num><content><p>Despite paragraph (1)(b), but subject to paragraph (1)(a) and (c) to (f), a locum solicitor may accept an executive appointment in a business entity which does not provide any legal services or law-related services, if all of the conditions set out in the Second Schedule are satisfied.</p></content></subSection><subSection eId="sec_34__subsec_6"><num>6</num><intro><p>Except as provided in paragraphs (2) to (5) -</p></intro><paragraph eId="sec_34__subsec_6__para_a"><num>a</num><content><p>a legal practitioner in a Singapore law practice must not accept any executive appointment in another Singapore law practice; and</p></content></paragraph><paragraph eId="sec_34__subsec_6__para_b"><num>b</num><content><p>a legal practitioner must not accept any executive appointment in a business entity.</p></content></paragraph></subSection><subSection eId="sec_34__subsec_7"><num>7</num><content><p>To avoid doubt, nothing in this rule prohibits a legal practitioner from accepting any appointment in any institution set out in the Third Schedule.</p></content></subSection><subSection eId="sec_34__subsec_8"><num>8</num><intro><p>To avoid doubt, this rule does not authorise the formation of, or regulate -</p></intro><paragraph eId="sec_34__subsec_8__para_a"><num>a</num><content><p>any related practice referred to in paragraph (2); or</p></content></paragraph><paragraph eId="sec_34__subsec_8__para_b"><num>b</num><content><p>any business entity referred to in paragraph (3), (4) or (5).</p></content></paragraph></subSection><subSection eId="sec_34__subsec_9"><num>9</num><intro><p>In this rule and the First to Fourth Schedules -</p></intro><paragraph eId="sec_34__subsec_9__para_a"><num>a</num><content><p>"business" includes any business, trade or calling in Singapore or elsewhere, whether or not for the purpose of profit, but excludes the practice of law;</p></content></paragraph><paragraph eId="sec_34__subsec_9__para_b"><num>b</num><intro><p>"business entity" -</p></intro><subParagraph eId="sec_34__subsec_9__para_b__subpara_i"><num>i</num><content><p>includes any company, corporation, partnership, limited liability partnership, sole proprietorship, business trust or other entity that carries on any business; but</p></content></subParagraph><subParagraph eId="sec_34__subsec_9__para_b__subpara_ii"><num>ii</num><content><p>excludes any Singapore law practice, any Joint Law Venture, any Formal Law Alliance, any foreign law practice and any institution set out in the Third Schedule;</p></content></subParagraph></paragraph><paragraph eId="sec_34__subsec_9__para_c"><num>c</num><content><p>"executive appointment" means a position associated with a business, or in a business entity or Singapore law practice, which entitles the holder of the position to perform executive functions in relation to the business, business entity or Singapore law practice (as the case may be), but excludes any non-executive director or independent director associated with the business or in the business entity;</p></content></paragraph><paragraph eId="sec_34__subsec_9__para_d"><num>d</num><content><p>"law-related service" means any service set out in the Fourth Schedule, being a service that may reasonably be performed in conjunction with, and that is in substance related to, the provision of any legal service.</p></content></paragraph></subSection></section></body></act></akomaNtoso>'

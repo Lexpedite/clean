@@ -11,11 +11,14 @@ ParserElement.setDefaultWhitespaceChars(' \t')
 OPEN = "("
 CLOSE = ")"
 DOT = "."
-SOL = line_start
 NL = Suppress(Literal('\n'))
-BLANK_LINE = SOL + NL
-UP = SOL + Literal("INDENT")
-DOWN = SOL + Literal("UNDENT")
+BLANK_LINE = line_start + NL
+UP = NL + "INDENT"
+DOWN = NL + "UNDENT"
+SPANNAME_START = Suppress("[")
+SPANNAME_STOP = Suppress("]")
+SPAN_START = Suppress("{")
+SPAN_STOP = Suppress("}")
 lowercase_roman_numerals = ['i','v','x','l','c','d','m']
 
 text_line = Combine(OneOrMore(Word(printables)),adjacent=False,join_string=" ")
@@ -55,9 +58,27 @@ paragraph = Forward()
 sub_section = Forward()
 section = Forward()
 numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP ^ BLANK_LINE
-legal_text = Combine(ZeroOrMore(NL ^ Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")
-heading = BLANK_LINE + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
-title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text') + NL
+span_name = SPANNAME_START + Word(alphanums) + SPANNAME_STOP
+span = Forward()
+span <<= Group(span_name)('span name') + SPAN_START + Group(ZeroOrMore(Group(span) ^ Combine(OneOrMore((Opt(NL) + Word(printables,exclude_chars="[}"))),join_string=" ",adjacent=False)))('span body') + SPAN_STOP
+# legal_text = Combine(ZeroOrMore( span ^ NL ^ Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")
+legal_text = \
+  ZeroOrMore( \
+    Group(span) \
+    ^ \
+    Combine(\
+      OneOrMore(\
+        (Opt(NL) + Word(printables)),
+        stop_on=span ^ numbered_part\
+      ), 
+      adjacent=False, 
+      join_string=" "\
+    ),
+    stop_on=numbered_part\
+  )
+# legal_text.set_whitespace_chars(' \t')
+heading = NL + NL + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('heading text')
+title = lineStart + Combine(Word(string.ascii_uppercase, printables) + ZeroOrMore(Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")('title text')
 sub_paragraph <<= sub_paragraph_index('sub-paragraph index') + legal_text('sub-paragraph text')
 sub_paragraph_list = OneOrMore(Group(sub_paragraph))
 paragraph <<= \
@@ -94,15 +115,29 @@ full_section = Optional(heading)('section header') + \
 section <<= full_section ^ empty_section
 # Only for sections, the initial text is optional. if it is missing,
 # there can be no post text.
-act = title('title') + ZeroOrMore(Group(section))('body') + ZeroOrMore(NL)
+act = title('title') + (FollowedBy(heading) | NL) + ZeroOrMore(Group(section))('body') + ZeroOrMore(NL)
 
+def generate_span(node, prefix=""):
+  output = ' <span eId="' + prefix + ("." if prefix else "") + node['span name'][0] + '">'
+  output += generate_legal_text(node['span body'],prefix + node['span name'][0])
+  output += "</span> "
+  return output
+
+def generate_legal_text(node, prefix=""):
+  output = ""
+  for element in node:
+    if type(element) == str:
+      output += element
+    else: # the only other option is a span
+      output += generate_span(element,prefix)
+  return output
 
 def generate_sub_paragraph(node, prefix=""):
   eId = prefix + "__subpara_" + node['sub-paragraph index'][0].replace('.','_')
   output = "<subParagraph eId=\"" + eId + "\"><num>"
   output += node['sub-paragraph index'][0]
   output += "</num><content><p>"
-  output += node['sub-paragraph text']
+  output += generate_legal_text(node['sub-paragraph text'],eId)
   output += "</p></content></subParagraph>"
   return output
 
@@ -111,20 +146,20 @@ def generate_paragraph(node, prefix=""):
   output = "<paragraph eId=\"" + p_prefix + "\"><num>"
   output += node['paragraph index'][0]
   output += "</num>"
-  if 'sub-paragraphs' in node and node['sub-paragraphs'] != '':
+  if 'sub-paragraphs' in node and len(node['sub-paragraphs']):
     output += "<intro><p>"
-    output += node['paragraph text']
+    output += generate_legal_text(node['paragraph text'], p_prefix)
     output += "</p></intro>"
     subparagraphs_list = node['sub-paragraphs']
     for sp in subparagraphs_list:
       output += generate_sub_paragraph(sp, p_prefix)
-      if node['paragraph post'] != '':
+      if len(node['paragraph post']):
         output += "<wrapup><p>"
-        output += node['paragraph post']
+        output += generate_legal_text(node['paragraph post'], p_prefix)
         output += "</p></wrapup>"
   else:
     output += "<content><p>"
-    output += node['paragraph text']
+    output += generate_legal_text(node['paragraph text'],p_prefix)
     output += "</p></content>"
   output += "</paragraph>"
   return output
@@ -134,23 +169,23 @@ def generate_sub_section(node, prefix=""):
   output = "<subSection eId=\"" + ss_prefix + "\"><num>"
   output += node['sub-section index'][0]
   output += "</num>"
-  if 'heading text' in node and node['heading text'] != '':
+  if 'heading text' in node and len(node['heading text']):
     output += "<heading>"
     output += node['heading text']
     output += "</heading>"
-  if 'paragraphs' in node and node['paragraphs'] != '':
+  if 'paragraphs' in node and len(node['paragraphs']):
     output += "<intro><p>"
-    output += node['sub-section text']
+    output += generate_legal_text(node['sub-section text'], ss_prefix)
     output += "</p></intro>"
     for p in node['paragraphs']:
       output += generate_paragraph(p, ss_prefix)
-    if node['sub-section post'] != '':
+    if len(node['sub-section post']):
       output += "<wrapup><p>"
-      output += node['sub-section post']
+      output += generate_legal_text(node['sub-section post'], ss_prefix)
       output += "</p></wrapup>"
   else:
     output += "<content><p>"
-    output += node['sub-section text']
+    output += generate_legal_text(node['sub-section text'], ss_prefix)
     output += "</p></content>"
   output += "</subSection>"
   return output
@@ -160,29 +195,29 @@ def generate_section(node):
   output = "<section eId=\"" + prefix + "\"><num>"
   output += node['section index'][0]
   output += "</num>"
-  if 'heading text' in node and node['heading text'] != '':
+  if 'heading text' in node and len(node['heading text']):
     output += "<heading>"
     output += node['heading text']
     output += "</heading>"
   if 'sub-sections' in node or 'paragraphs' in node:
-    if node['section text'] != '':
+    if len(node['section text']):
       output += "<intro><p>"
-      output += node['section text']
+      output += generate_legal_text(node['section text'], prefix)
       output += "</p></intro>"
-    if 'sub-sections' in node and node['sub-sections'] != '':
+    if 'sub-sections' in node and len(node['sub-sections']):
       for p in node['sub-sections']:
         output += generate_sub_section(p, prefix)
-    elif node['paragraphs'] != '':
+    elif len(node['paragraphs']):
       for p in node['paragraphs']:
         output += generate_paragraph(p, prefix)
-    if node['section post'] != '':
+    if len(node['section post']):
       output += "<wrapup><p>"
-      output += node['section post']
+      output += generate_legal_text(node['section post'], prefix)
       output += "</p></wrapup>"
   else:
-    if node['section text'] != '':
+    if len(node['section text']):
       output += "<content><p>"
-      output += node['section text']
+      output += generate_legal_text(node['section text'], prefix)
       output += "</p></content>"
   output += "</section>"
   return output
@@ -230,17 +265,17 @@ def addExplicitIndents(string):
   for line in string.splitlines():
     level = len(line) - len(line.lstrip(' '))
     if level == levels[-1]: # The level has not changed
-      output += line + '\n'
+      output += line.lstrip(' ') + '\n'
     elif level > levels[-1]: # The indent has increased
       levels.append(level)
       output += UP
-      output += line + '\n'
+      output += line.lstrip(' ') + '\n'
     elif level < levels[-1]: # The indent has gone down
       if level in levels: #We are returning to a previous level
         while level != levels[-1]:
           output += DOWN
           levels.pop()
-        output += line + '\n'
+        output += line.lstrip(' ') + '\n'
       else:
         raise Exception("Unindent to a level not previously used in " + line)
   # At this point, it is possible that we have a high indentation level,
@@ -248,4 +283,6 @@ def addExplicitIndents(string):
   while len(levels) > 1:
     output += DOWN
     levels.pop()
+  while output.splitlines()[-1] == "\n":
+    output.pop()
   return output

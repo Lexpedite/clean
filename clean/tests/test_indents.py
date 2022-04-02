@@ -1,6 +1,24 @@
 import pytest
 from ..clean import addExplicitIndents
 
+def test_hanging_indents():
+    text = """Title
+1. Section
+  (1) Subsection
+    (a) Paragraph
+"""
+    indents = addExplicitIndents(text)
+    assert indents == """Title
+1. Section
+INDENT
+(1) Subsection
+INDENT
+(a) Paragraph
+UNDENT
+UNDENT
+"""
+
+
 def test_indents():
     text = """Rock Paper Scissors Act
 
@@ -28,17 +46,17 @@ Players
 1. A game of rock paper scissors has two players.
 2. There are three signs:
 INDENT
-  (1) Rock,
-  (2) Paper, and
-  (3) Scissors.
+(1) Rock,
+(2) Paper, and
+(3) Scissors.
 UNDENT
 
 Defeating Relationships
 3.
 INDENT
-  (1) Rock beats Scissors,
-  (2) Scissors beats Paper, and
-  (3) Paper beats Rock.
+(1) Rock beats Scissors,
+(2) Scissors beats Paper, and
+(3) Paper beats Rock.
 UNDENT
 
 Winner
@@ -67,27 +85,27 @@ def test_multi_level_indents():
     assert indents == """
 1.
 INDENT
-    1.1
+1.1
 INDENT
-        1.1.1
-        1.1.2
+1.1.1
+1.1.2
 UNDENT
-    1.2
+1.2
 INDENT
-        1.2.1
+1.2.1
 UNDENT
-    1.3
+1.3
 UNDENT
 2.
 INDENT
-    2.1
+2.1
 UNDENT
 3.
 INDENT
-    3.1
+3.1
 INDENT
-        3.1.1
-        3.1.2
+3.1.1
+3.1.2
 UNDENT
 UNDENT
 4.

@@ -152,6 +152,21 @@ lower-case roman numeral surrounded in parentheses. They must have
 legal text, which can span across lines in the usual way.
 Sub-paragraphs cannot have further sub-divisions, and cannot have a header.
 
+### Spans
+
+Akoma Ntoso provides a mechanism for you to identify 
+a sub-part of a block of text inside a law. In CLEAN you can create
+these named spans by using the following syntax: `[name]{contents}`.
+
+```text
+1. This is an example of the text of a section [name]{with
+a named span of text} included in it.
+```
+
+The name given to a span between the square brackets must not have any
+spaces in it. It should be unique to be useful. Spans can be 
+nested inside one another.
+
 ## An Example
 
 An example act might look like this:
