@@ -60,7 +60,7 @@ section = Forward()
 numbered_part = sub_paragraph_index ^ paragraph_index ^ sub_section_index ^ section_index ^ DOWN ^ UP ^ BLANK_LINE
 span_name = SPANNAME_START + Word(alphanums) + SPANNAME_STOP
 span = Forward()
-span <<= Group(span_name)('span name') + SPAN_START + Group(ZeroOrMore(Group(span) ^ Combine(OneOrMore((Opt(NL) + Word(printables,exclude_chars="[}"))),join_string=" ",adjacent=False)))('span body') + SPAN_STOP
+span <<= Group(Opt(NL) + span_name)('span name') + SPAN_START + Group(ZeroOrMore(Group(span) ^ Combine(OneOrMore((Opt(NL) + Word(printables,exclude_chars="[}"))),join_string=" ",adjacent=False)))('span body') + SPAN_STOP
 # legal_text = Combine(ZeroOrMore( span ^ NL ^ Word(printables), stop_on=numbered_part), adjacent=False, join_string=" ")
 legal_text = \
   ZeroOrMore( \

@@ -505,6 +505,20 @@ across lines.""",parse_all=True)
             'including across lines.'
         ]
 
+    def test_spans_on_new_line(self):
+        parse = legal_text.parseString("""This is a test
+[of] {a paragraph with} including
+across lines.""",parse_all=True)
+        assert parse.as_list() == [
+            'This is a test',
+            [
+                ['of'],
+                ['a paragraph with']
+            ],
+            'including across lines.'
+        ]
+
+
 class TestR34:
     def test_long_example(self):
         with open('clean/tests/r34.clean','r') as file:
