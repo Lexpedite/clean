@@ -118,7 +118,7 @@ section <<= full_section ^ empty_section
 act = title('title') + (FollowedBy(heading) | NL) + ZeroOrMore(Group(section))('body') + ZeroOrMore(NL)
 
 def generate_span(node, prefix=""):
-  output = ' <span eId="' + prefix + ("." if prefix else "") + node['span name'][0] + '">'
+  output = ' <span eId="' + prefix + ("__span_" if prefix else "") + node['span name'][0] + '">'
   output += generate_legal_text(node['span body'],prefix + node['span name'][0])
   output += "</span> "
   return output
